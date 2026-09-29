@@ -41,7 +41,6 @@
 </svg>
 Dashboard
 </a>
-
   <a href="#">
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <path d="M17.8458 16.1779C17.5332 16.4904 17.1093 16.666 16.6672 16.666H3.33282C2.89075 16.666 2.4668 16.4904 2.15421 16.1779C1.84162 15.8653 1.66602 15.4414 1.66602 14.9994V4.16659C1.66602 3.72458 1.84162 3.30068 2.15421 2.98813C2.4668 2.67559 2.89075 2.5 3.33282 2.5H6.60808C6.88402 2.50005 7.15564 2.56859 7.39856 2.69949C7.64147 2.83038 7.84809 3.01953 7.99986 3.24996L8.67491 4.24992C8.82822 4.48272 9.03748 4.67335 9.28354 4.80437C9.5296 4.9354 9.80459 5.00262 10.0834 4.99988H16.6672C17.1093 4.99988 17.5332 5.17547 17.8458 5.48801C18.1584 5.80056 18.334 6.22446 18.334 6.66647V14.9994C18.334 15.4414 18.1584 15.8653 17.8458 16.1779Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -77,6 +76,7 @@ Logout
 
   <main class="main">
     <header class="topbar">
+    <div class="topbar-actions">
   <div class="search">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
 <path d="M15.7501 15.7501L12.4951 12.4951M14.25 8.25C14.25 11.5637 11.5637 14.25 8.25 14.25C4.93629 14.25 2.25 11.5637 2.25 8.25C2.25 4.93629 4.93629 2.25 8.25 2.25C11.5637 2.25 14.25 4.93629 14.25 8.25Z" stroke="#6E6E6E" stroke-width="2" stroke-linecap="round"/>
@@ -87,6 +87,28 @@ Logout
 
   <div class="topbar-right">
     <span class="sync"><span class="sync-dot"></span>Synced just now</span>
+
+    <div class="icon-set">
+  <button class="icon-btn" aria-label="Mail">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6M22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</button>
+
+<button class="icon-btn" aria-label="AI assistant">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M15.016 5.954C14.5274 6.17952 14.0202 6.3622 13.5 6.5C14.0207 6.63663 14.528 6.8197 15.016 7.047C15.927 7.485 16.51 8.061 16.953 8.979C17.16 9.405 17.335 9.906 17.5 10.5C17.6363 9.97762 17.8194 9.46857 18.047 8.979C18.49 8.062 19.073 7.485 19.984 7.047C20.4726 6.82114 20.9798 6.63812 21.5 6.5C20.909 6.334 20.41 6.159 19.984 5.954C19.073 5.516 18.49 4.939 18.047 4.021C17.84 3.595 17.665 3.095 17.5 2.5C17.335 3.094 17.16 3.594 16.953 4.022C16.51 4.939 15.927 5.516 15.016 5.954Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M4.152 13.968C3.6089 14.168 3.05776 14.3455 2.5 14.5C3.05776 14.6545 3.6089 14.832 4.152 15.032C6.693 15.985 8.005 17.27 8.968 19.838C9.16943 20.384 9.34693 20.9385 9.5 21.5C9.65307 20.9385 9.83057 20.384 10.032 19.838C10.994 17.27 12.306 15.985 14.848 15.032C15.3911 14.832 15.9422 14.6545 16.5 14.5C15.8987 14.332 15.348 14.1547 14.848 13.968C12.307 13.015 10.995 11.729 10.032 9.162C9.83057 8.616 9.65307 8.06148 9.5 7.5C9.34693 8.06148 9.16943 8.616 8.968 9.162C8.005 11.73 6.694 13.015 4.152 13.968Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</button>
+
+<button class="icon-btn" aria-label="Notifications">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M13.73 21C13.5542 21.3031 13.3018 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</button>
+</div>
+
     <div class="user">
       <div class="user-avatar">AB</div>
       <div class="user-info">
@@ -95,6 +117,7 @@ Logout
       </div>
     </div>
   </div>
+    </div>
 </header>
     </main>
   <aside class="right-rail">Right rail</aside>

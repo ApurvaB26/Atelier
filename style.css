@@ -64,6 +64,7 @@
   height: 100vh;
 }
 
+/*SIDEBAR*/
 .sidebar {
   background: var(--sidebar-bg);
   display: inline-flex;
@@ -93,6 +94,11 @@
   border-radius: 12px;
   background: var(--logo-bg);
   color: var(--black);
+  font-family: var(--font-main);
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;  
   
 }
 
@@ -180,14 +186,25 @@
 
 .main { background: var(--main-bg); }
 
+/*TOPBAR*/
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  align-self: stretch;
+  flex: 1 0 0;
   height: 72px;
   padding: 16px 24px;
   background: var(--white);
   border-bottom: 1px solid var(--stroke);
+}
+
+.topbar-actions {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ flex: 1 0 0;
+ align-self: stretch;
 }
 
 .search {
@@ -196,7 +213,7 @@
   justify-content: space-between;
   align-self: stretch;
   gap: 8px;
-  width: 680px;
+  width: 640px;
   max-width: 100%;
   padding: 8px 16px;
   height: 40px;
@@ -267,11 +284,44 @@ gap: 16px;
   box-shadow: 0 0 8px 4px rgba(58, 154, 74, 0.3);
 }
 
+.icon-set {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.icon-btn {
+  display: flex;
+  padding: 8px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: var(--main-bg);
+  color: var(--light-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-btn:hover {
+  background: var(--secondary-actions);
+  color: var(--white);
+}
+
 .user {
   display: flex;
-  width: 174px;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .user-avatar {
@@ -282,19 +332,39 @@ gap: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 500;
-  padding:16px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
 }
 
 .user-info {
   display: flex;
+  width: 122px;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 2px;
+  font-family: var(--font-body);
 }
 
+.user-info strong { 
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    color: var(--black);
+    align-self: stretch;
+}
 
+.user-info span { 
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    color: var(--light-black);
+    align-self: stretch;
+}
 
 
 
