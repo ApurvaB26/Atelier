@@ -86,7 +86,7 @@ Logout
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
 <path d="M15.7501 15.7501L12.4951 12.4951M14.25 8.25C14.25 11.5637 11.5637 14.25 8.25 14.25C4.93629 14.25 2.25 11.5637 2.25 8.25C2.25 4.93629 4.93629 2.25 8.25 2.25C11.5637 2.25 14.25 4.93629 14.25 8.25Z" stroke="#6E6E6E" stroke-width="2" stroke-linecap="round"/>
 </svg>
-    <input type="text" placeholder="Search projects, policies, consultants...">
+    <input type="search" aria-label="Search tasks" placeholder="Search projects, policies, consultants...">
     <span class="search-key">⌘K</span>
   </div>
 
@@ -246,9 +246,112 @@ Logout
   </div>
 </section>
 
+<section class="panel">
+  <section class="panel-header">
+    <h2>Your Tasks - today</h2>
+    <div class="panel-actions">
+    <button class="add-btn" type="button" aria-label="Add task">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path d="M7.99967 3.33301V12.6663M3.33301 7.99967H12.6663" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+    </button>
+    <span class="panel-count" aria-live="polite">0/3</span>
+  </div>
+  </section>
+
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col" aria-label="Complete"></th>
+        <th scope="col">ID</th>
+        <th scope="col">Task</th>
+        <th scope="col">Priority</th>
+        <th scope="col">Due Date</th>
+        <th scope="col">Project Name</th>
+        <th scope="col">Assigned By</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+    <label class="custom-checkbox">
+      <input class="task-checkbox" type="checkbox" aria-label="Complete Review Plumbing Schematics">
+      <span class="checkbox-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
+  <rect x="0.5" y="0.5" width="21" height="21" rx="3.5" stroke="currentColor"/>
+</svg>
+      </span>
+    </label>
+  </td>
+        <td>T-12</td>
+        <td>
+          <strong>Review Plumbing Schematics</strong>
+          <span class="row-subtitle">Plumbing</span>
+        </td>
+        <td><span class="badge high">High</span></td>
+        <td><span class="status overdue">Overdue</span></td>
+        <td>Lodha One • Wing 25</td>
+        <td>Apurva Bhadange</td>
+        <td><button class="comment-btn">💬 Comment</button></td>
+      </tr>
+      <tr>
+        <td>
+    <label class="custom-checkbox">
+      <input class="task-checkbox" type="checkbox" aria-label="Complete Approved Revised Typical Floor1">
+      <span class="checkbox-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
+  <rect x="0.5" y="0.5" width="21" height="21" rx="3.5" stroke="currentColor"/>
+</svg>
+      </span>
+    </label>
+  </td>
+        <td>T-13</td>
+        <td>
+          <strong>Approved Revised Typical Floor1</strong>
+          <span class="row-subtitle">Coordinated</span>
+        </td>
+        <td><span class="badge medium">Medium</span></td>
+        <td><span class="status due-today">Due Today</span></td>
+        <td>Lodha One • Wing 25</td>
+        <td>Apurva Bhadange</td>
+        <td><button class="comment-btn">💬 Comment</button></td>
+      </tr>
+      <tr>
+        <td>
+    <label class="custom-checkbox">
+      <input class="task-checkbox" type="checkbox" aria-label="Complete Review MEP Concept Space Planning">
+      <span class="checkbox-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
+  <rect x="0.5" y="0.5" width="21" height="21" rx="3.5" stroke="currentColor"/>
+</svg>
+      </span>
+    </label>
+  </td>
+        <td>T-14</td>
+        <td>
+          <strong>Review MEP Concept Space Planning</strong>
+          <span class="row-subtitle">Coordinated</span>
+        </td>
+        <td><span class="badge low">Low</span></td>
+        <td><span class="status due-tomorrow">Due Tomorrow</span></td>
+        <td>Lodha One • Wing 25</td>
+        <td>Apurva Bhadange</td>
+        <td><button class="comment-btn">💬 Comment</button></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <a href="#" class="view-all">View All Tasks ↗</a>
+</section>
+
+
+
     </main>
   <aside class="right-rail">Right rail</aside>
 </div>
-  <script src="script.js"></script>  
+  <script src="app.js" defer></script>
 </body>
 </html>
