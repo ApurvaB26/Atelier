@@ -93,6 +93,11 @@ Logout
   <div class="topbar-right">
     <span class="sync"><span class="sync-dot"></span>Synced just now</span>
 
+    <button class="create-project-btn" type="button" data-open-project-dialog>
+      <span aria-hidden="true">+</span>
+      Create Project
+    </button>
+
     <div class="icon-set">
   <button class="icon-btn" aria-label="Mail">
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -124,6 +129,123 @@ Logout
   </div>
     </div>
 </header>
+
+<div class="dialog-backdrop" id="project-dialog-backdrop" hidden>
+  <section class="project-dialog" role="dialog" aria-modal="true" aria-labelledby="project-dialog-title" aria-describedby="project-dialog-description">
+    <header class="project-dialog-header">
+      <div>
+        <h2 id="project-dialog-title">Create Project</h2>
+        <p id="project-dialog-description">Set the core details now. You can refine phases and permissions after creation.</p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Close dialog" data-close-project-dialog>&times;</button>
+    </header>
+
+    <form class="project-form" id="project-form">
+      <div class="project-form-fields">
+        <div class="form-field">
+          <label for="project-name">Project name <span>*</span></label>
+          <input id="project-name" name="projectName" placeholder="e.g. Lodha Belmondo" required>
+        </div>
+        <div class="form-field">
+          <label for="project-code">Project code</label>
+          <input id="project-code" name="projectCode" placeholder="e.g. LB-K">
+        </div>
+        <div class="form-field">
+          <label for="project-category">Project type / category <span>*</span></label>
+          <select id="project-category" name="category" required>
+            <option value="" selected disabled>Select project category</option>
+            <option>Residential</option>
+            <option>Commercial</option>
+            <option>Industrial</option>
+            <option>Healthcare</option>
+            <option>Hospitality</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="project-location">Location <span>*</span></label>
+          <input id="project-location" name="location" placeholder="⌖  City, site, or full address" required>
+        </div>
+        <div class="form-field form-field-wide">
+          <div class="field-label-row">
+            <label for="project-description">Description</label>
+            <span class="character-count" aria-live="polite">0 / 500</span>
+          </div>
+          <textarea id="project-description" name="description" maxlength="500" placeholder="Briefly describe the project scope, objectives, and key deliverables..."></textarea>
+        </div>
+        <div class="form-field">
+          <label for="project-start-date">Start date</label>
+          <input id="project-start-date" name="startDate" type="date">
+        </div>
+        <div class="form-field">
+          <label for="project-target-date">Target completion date</label>
+          <input id="project-target-date" name="targetDate" type="date">
+        </div>
+        <div class="form-field">
+          <label for="project-manager">Project manager</label>
+          <select id="project-manager" name="manager">
+            <option value="" selected>Select project manager</option>
+            <option>Apurva Bhadange</option>
+            <option>Riya Shah</option>
+            <option>Arjun Mehta</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="project-consultant">Consultant</label>
+          <select id="project-consultant" name="consultant">
+            <option value="" selected>Select Consultant</option>
+            <option>MEP Consultants</option>
+            <option>Studio North</option>
+            <option>Urban Systems</option>
+          </select>
+        </div>
+        <fieldset class="form-field form-field-wide team-field">
+          <legend>Team members</legend>
+          <details class="team-picker">
+            <summary>
+              <span class="team-avatars" aria-hidden="true"><span>AB</span><span>RS</span><span>AM</span></span>
+              <span class="team-selection-count">3 members selected · Add or remove</span>
+              <span class="select-chevron" aria-hidden="true"></span>
+            </summary>
+            <div class="team-options">
+              <label class="colleague-search">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                  <circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="2.2"></circle>
+                  <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+                </svg>
+                <input class="colleague-search-input" type="search" aria-label="Search colleagues" placeholder="Search colleagues...">
+              </label>
+              <label><input type="checkbox" name="teamMembers" value="apurva" checked> Apurva Bhadange</label>
+              <label><input type="checkbox" name="teamMembers" value="riya" checked> Riya Shah</label>
+              <label><input type="checkbox" name="teamMembers" value="arjun" checked> Arjun Mehta</label>
+              <label><input type="checkbox" name="teamMembers" value="neha"> Neha Patel</label>
+              <p class="no-colleagues" hidden>No colleagues found.</p>
+            </div>
+          </details>
+        </fieldset>
+        <div class="form-field">
+          <label for="project-attachment">Attachment</label>
+          <label class="attachment-dropzone" for="project-attachment">
+            <span aria-hidden="true">⇧</span>
+            <span class="attachment-prompt">Drop an area statement or design brief here</span>
+            <span class="attachment-filename" aria-live="polite"></span>
+          </label>
+          <input class="visually-hidden" id="project-attachment" name="attachment" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+        </div>
+        <div class="form-field">
+          <label for="project-budget">Estimated budget</label>
+          <div class="budget-input"><span aria-hidden="true">$</span><input id="project-budget" name="budget" type="number" min="0" step="0.01" placeholder="Enter estimated budget"></div>
+        </div>
+      </div>
+      <footer class="project-dialog-footer">
+        <p class="required-note"><span aria-hidden="true">ⓘ</span> Fields marked with * are required</p>
+        <div class="dialog-actions">
+          <button class="cancel-project-btn" type="button" data-close-project-dialog>Cancel</button>
+          <button class="submit-project-btn" type="submit"><span aria-hidden="true">+</span> Create Project</button>
+        </div>
+      </footer>
+    </form>
+  </section>
+</div>
 
 <section class="greeting-card">
   <div class="greeting-text">
