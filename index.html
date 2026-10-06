@@ -29,7 +29,7 @@
   </div>
   <!-- Sidebar navigation set -->
 <nav class="nav-bar">
-  <a href="#" class="active">
+  <a href="#dashboard" class="active" data-view-target="dashboard" aria-current="page">
     <!-- Sidebar navigation set -->
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <g clip-path="url(#clip0_775_10460)">
@@ -46,7 +46,7 @@
 </svg>
 Dashboard
 </a>
-  <a href="#">
+  <a href="#projects" data-view-target="projects">
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <path d="M17.8458 16.1779C17.5332 16.4904 17.1093 16.666 16.6672 16.666H3.33282C2.89075 16.666 2.4668 16.4904 2.15421 16.1779C1.84162 15.8653 1.66602 15.4414 1.66602 14.9994V4.16659C1.66602 3.72458 1.84162 3.30068 2.15421 2.98813C2.4668 2.67559 2.89075 2.5 3.33282 2.5H6.60808C6.88402 2.50005 7.15564 2.56859 7.39856 2.69949C7.64147 2.83038 7.84809 3.01953 7.99986 3.24996L8.67491 4.24992C8.82822 4.48272 9.03748 4.67335 9.28354 4.80437C9.5296 4.9354 9.80459 5.00262 10.0834 4.99988H16.6672C17.1093 4.99988 17.5332 5.17547 17.8458 5.48801C18.1584 5.80056 18.334 6.22446 18.334 6.66647V14.9994C18.334 15.4414 18.1584 15.8653 17.8458 16.1779Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 </svg>
@@ -123,7 +123,11 @@ Logout
       <div class="user-avatar">AB</div>
       <div class="user-info">
         <strong>Apurva Bhadange</strong>
-        <span>MEP Design</span>
+        <span class="user-role">Super Admin
+          <svg aria-hidden="true" viewBox="0 0 16 16" fill="none">
+            <path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
       </div>
     </div>
   </div>
@@ -152,18 +156,36 @@ Logout
         </div>
         <div class="form-field">
           <label for="project-category">Project type / category <span>*</span></label>
-          <select id="project-category" name="category" required>
-            <option value="" selected disabled>Select project category</option>
-            <option>Residential</option>
-            <option>Commercial</option>
-            <option>Industrial</option>
-            <option>Healthcare</option>
-            <option>Hospitality</option>
-          </select>
+          <input id="project-category" name="category" type="hidden">
+          <details class="custom-select category-select" data-select="category">
+            <summary><span class="select-value">Select project category</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu category-options" role="listbox" aria-label="Project category">
+              <button type="button" class="category-option" data-value="Commercial" aria-selected="false"><svg class="category-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M3 21h18M5 21V7.5c0-.8.5-1.5 1.2-1.8l5-2.2a2 2 0 0 1 1.6 0l5 2.2c.7.3 1.2 1 1.2 1.8V21M9 21v-4h6v4M8 9h1m6 0h1M8 12h1m6 0h1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>Commercial</strong><small>Offices, retail, hospitality</small></span><span class="category-selected-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="category-option" data-value="Residential"><span class="option-icon">⌂</span><span><strong>Residential</strong><small>Homes and multi-family</small></span></button>
+              <button type="button" class="category-option" data-value="Infrastructure"><span class="option-icon">⊗</span><span><strong>Infrastructure</strong><small>Civil and public works</small></span></button>
+              <button type="button" class="category-option" data-value="Industrial"><span class="option-icon">▤</span><span><strong>Industrial</strong><small>Factories and logistics</small></span></button>
+              <button type="button" class="category-option" data-value="Renovation"><span class="option-icon">⚒</span><span><strong>Renovation</strong><small>Retrofit and refurbishment</small></span></button>
+            </div>
+          </details>
         </div>
         <div class="form-field">
           <label for="project-location">Location <span>*</span></label>
-          <input id="project-location" name="location" placeholder="⌖  City, site, or full address" required>
+          <input id="project-location" name="location" type="hidden">
+          <details class="custom-select region-select" data-select="region">
+            <summary><span class="region-pin" aria-hidden="true">⌖</span><span class="select-value">Select region</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu region-options" role="listbox" aria-label="Project region">
+              <p class="option-group-title">Mumbai region</p>
+              <button type="button" data-value="South Mumbai"><span class="region-pin">⌖</span><span>South Mumbai</span><small>MH</small></button>
+              <button type="button" data-value="Thane"><span class="region-pin">⌖</span><span>Thane</span><small>MH</small></button>
+              <button type="button" data-value="Upper Thane"><span class="region-pin">⌖</span><span>Upper Thane</span><small>MH</small></button>
+              <button type="button" data-value="Palava"><span class="region-pin">⌖</span><span>Palava</span><small>MH</small></button>
+              <button type="button" data-value="Western"><span class="region-pin">⌖</span><span>Western</span><small>MH</small></button>
+              <button type="button" data-value="Eastern"><span class="region-pin">⌖</span><span>Eastern</span><small>MH</small></button>
+              <p class="option-group-title">Other hubs</p>
+              <button type="button" data-value="Pune"><span class="region-pin">⌖</span><span>Pune</span><small>MH</small></button>
+              <button type="button" data-value="Bangalore"><span class="region-pin">⌖</span><span>Bangalore</span><small>KN</small></button>
+            </div>
+          </details>
         </div>
         <div class="form-field form-field-wide">
           <div class="field-label-row">
@@ -174,51 +196,90 @@ Logout
         </div>
         <div class="form-field">
           <label for="project-start-date">Start date</label>
-          <input id="project-start-date" name="startDate" type="date">
+          <input class="visually-hidden date-value-input" id="project-start-date" name="startDate" type="date" tabindex="-1" aria-hidden="true">
+          <details class="date-picker" data-date-picker="project-start-date">
+            <summary aria-label="Choose project start date"><span class="date-picker-value">Select start date</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 2.5v4M13.5 2.5v4M3.5 8h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></summary>
+            <div class="calendar-panel">
+              <div class="calendar-topline"><button class="calendar-back" type="button" aria-label="Previous month">‹</button><div><strong class="calendar-selected-date">Select a date</strong><span class="calendar-week"></span></div><button class="calendar-open-native" type="button" aria-label="Open calendar">▦</button></div>
+              <div class="calendar-monthbar"><strong class="calendar-month-label"></strong><div><button class="calendar-month-prev" type="button" aria-label="Previous month">⌃</button><button class="calendar-month-next" type="button" aria-label="Next month">⌄</button></div></div>
+              <div class="calendar-weekdays" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+              <div class="calendar-days" role="grid" aria-label="Calendar dates"></div>
+              <div class="calendar-footer"><button class="calendar-clear" type="button">Clear</button><button class="calendar-today" type="button">Today</button></div>
+            </div>
+          </details>
         </div>
         <div class="form-field">
           <label for="project-target-date">Target completion date</label>
-          <input id="project-target-date" name="targetDate" type="date">
+          <input class="visually-hidden date-value-input" id="project-target-date" name="targetDate" type="date" tabindex="-1" aria-hidden="true">
+          <details class="date-picker" data-date-picker="project-target-date">
+            <summary aria-label="Choose target completion date"><span class="date-picker-value">Select target date</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 2.5v4M13.5 2.5v4M3.5 8h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></summary>
+            <div class="calendar-panel">
+              <div class="calendar-topline"><button class="calendar-back" type="button" aria-label="Previous month">‹</button><div><strong class="calendar-selected-date">Select a date</strong><span class="calendar-week"></span></div><button class="calendar-open-native" type="button" aria-label="Open calendar">▦</button></div>
+              <div class="calendar-monthbar"><strong class="calendar-month-label"></strong><div><button class="calendar-month-prev" type="button" aria-label="Previous month">⌃</button><button class="calendar-month-next" type="button" aria-label="Next month">⌄</button></div></div>
+              <div class="calendar-weekdays" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+              <div class="calendar-days" role="grid" aria-label="Calendar dates"></div>
+              <div class="calendar-footer"><button class="calendar-clear" type="button">Clear</button><button class="calendar-today" type="button">Today</button></div>
+            </div>
+          </details>
         </div>
         <div class="form-field">
           <label for="project-manager">Project manager</label>
-          <select id="project-manager" name="manager">
-            <option value="" selected>Select project manager</option>
-            <option>Apurva Bhadange</option>
-            <option>Riya Shah</option>
-            <option>Arjun Mehta</option>
-          </select>
+          <input id="project-manager" name="manager" type="hidden">
+          <details class="custom-select searchable-select" data-select="manager">
+            <summary><span class="select-value">Select project manager</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu people-options" role="listbox" aria-label="Project manager">
+              <label class="dropdown-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search project managers" aria-label="Search project managers"></label>
+              <button type="button" class="person-option" data-value="Priya Shah"><span class="person-avatar">PS</span><span><strong>Priya Shah</strong><small>Senior Project Manager</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Arjun Mehta"><span class="person-avatar">AM</span><span><strong>Arjun Mehta</strong><small>Project Manager · West region</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Neha Kapoor"><span class="person-avatar">NK</span><span><strong>Neha Kapoor</strong><small>Design Program Manager</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Daniel Wu"><span class="person-avatar">DW</span><span><strong>Daniel Wu</strong><small>Construction Project Manager</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Fatima Khan"><span class="person-avatar">FK</span><span><strong>Fatima Khan</strong><small>Associate Project Manager</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <p class="no-options" hidden>No project managers found.</p>
+            </div>
+          </details>
         </div>
         <div class="form-field">
           <label for="project-consultant">Consultant</label>
-          <select id="project-consultant" name="consultant">
-            <option value="" selected>Select Consultant</option>
-            <option>MEP Consultants</option>
-            <option>Studio North</option>
-            <option>Urban Systems</option>
-          </select>
+          <input id="project-consultant" name="consultant" type="hidden">
+          <details class="custom-select searchable-select" data-select="consultant">
+            <summary><span class="select-value">Select Consultant</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu people-options consultant-options" role="listbox" aria-label="Consultant">
+              <label class="dropdown-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search consultant" aria-label="Search consultant"></label>
+              <button type="button" class="person-option" data-value="Axis Structural"><span class="option-icon">▦</span><span><strong>Axis Structural</strong><small>Structural engineering · Axis Partners</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Studio North"><span class="option-icon">◇</span><span><strong>Studio North</strong><small>Architecture and interiors</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="Verdant Systems"><span class="option-icon">❧</span><span><strong>Verdant Systems</strong><small>MEP and sustainability</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="TerraScope"><span class="option-icon">♧</span><span><strong>TerraScope</strong><small>Landscape architecture</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <button type="button" class="person-option" data-value="CivicLine Advisory"><span class="option-icon">▤</span><span><strong>CivicLine Advisory</strong><small>Planning and approvals</small></span><span class="option-check" aria-hidden="true">✓</span></button>
+              <p class="no-options" hidden>No consultants found.</p>
+            </div>
+          </details>
         </div>
         <fieldset class="form-field form-field-wide team-field">
           <legend>Team members</legend>
           <details class="team-picker">
             <summary>
-              <span class="team-avatars" aria-hidden="true"><span>AB</span><span>RS</span><span>AM</span></span>
-              <span class="team-selection-count">3 members selected · Add or remove</span>
+              <span class="team-search-icon" aria-hidden="true">⌕</span>
+              <span class="team-summary-label">Search team members</span>
               <span class="select-chevron" aria-hidden="true"></span>
             </summary>
             <div class="team-options">
+              <div class="team-options-heading">
+                <strong class="team-selection-count">3 members selected</strong>
+                <span class="team-selection-fraction">3 / 6</span>
+                <button class="clear-team-selection" type="button">Clear selection</button>
+              </div>
               <label class="colleague-search">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-                  <circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="2.2"></circle>
-                  <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
-                </svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="2.2"></circle><path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
                 <input class="colleague-search-input" type="search" aria-label="Search colleagues" placeholder="Search colleagues...">
               </label>
-              <label><input type="checkbox" name="teamMembers" value="apurva" checked> Apurva Bhadange</label>
-              <label><input type="checkbox" name="teamMembers" value="riya" checked> Riya Shah</label>
-              <label><input type="checkbox" name="teamMembers" value="arjun" checked> Arjun Mehta</label>
-              <label><input type="checkbox" name="teamMembers" value="neha"> Neha Patel</label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="priya" checked><span class="member-avatar">PS</span><span class="member-copy"><strong>Priya Shah</strong><small>Senior Project Manager</small></span></label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="arjun" checked><span class="member-avatar avatar-cocoa">AM</span><span class="member-copy"><strong>Arjun Mehta</strong><small>Project Manager · West region</small></span></label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="neha" checked><span class="member-avatar avatar-sand">NK</span><span class="member-copy"><strong>Neha Kapoor</strong><small>Design Program Manager</small></span></label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="daniel"><span class="member-avatar avatar-cocoa">DW</span><span class="member-copy"><strong>Daniel Wu</strong><small>Construction Project Manager</small></span></label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="fatima"><span class="member-avatar avatar-sand">FK</span><span class="member-copy"><strong>Fatima Khan</strong><small>Associate Project Manager</small></span></label>
+              <label class="team-member-option"><input type="checkbox" name="teamMembers" value="riya"><span class="member-avatar">RS</span><span class="member-copy"><strong>Riya Shah</strong><small>MEP Designer</small></span></label>
               <p class="no-colleagues" hidden>No colleagues found.</p>
+              <div class="team-options-footer"><span>Team access can be changed later.</span><button class="team-done-btn" type="button">Done</button></div>
             </div>
           </details>
         </fieldset>
@@ -247,6 +308,96 @@ Logout
   </section>
 </div>
 
+<div class="dialog-backdrop" id="task-dialog-backdrop" hidden>
+  <section class="task-dialog" role="dialog" aria-modal="true" aria-labelledby="task-dialog-title">
+    <header class="task-dialog-header">
+      <div>
+        <h2 id="task-dialog-title">New Task</h2>
+        <p class="required-note">
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <g clip-path="url(#clip0_735_5599)">
+    <path d="M6.99982 9.33334V6.99982M6.99982 4.6663H7.00565M12.8336 6.99982C12.8336 10.2217 10.2217 12.8336 6.99982 12.8336C3.7779 12.8336 1.16602 10.2217 1.16602 6.99982C1.16602 3.7779 3.7779 1.16602 6.99982 1.16602C10.2217 1.16602 12.8336 3.7779 12.8336 6.99982Z" stroke="#B91C1C" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <defs>
+    <clipPath id="clip0_735_5599">
+      <rect width="14" height="14" fill="white"/>
+    </clipPath>
+  </defs>
+</svg>
+  Fields marked with * are required
+</p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Close" data-close-task-dialog>&times;</button>
+    </header>
+
+    <form class="task-form" id="task-form">
+      <div class="task-form-fields">
+        <div class="form-field">
+          <label for="task-title">Title <span>*</span></label>
+          <input id="task-title" placeholder="Enter Task title (e.g., Issue Fire Tender)" required>
+        </div>
+
+        <div class="form-field">
+          <label for="task-description">Description</label>
+          <textarea id="task-description" placeholder="Add detailed instruction, location notes, or context ..."></textarea>
+        </div>
+
+        <div class="task-row">
+          <div class="form-field">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="task-discipline">Discipline</label>
+            <select id="task-discipline">
+              <option selected>General</option>
+              <option>Plumbing</option>
+              <option>Drainage</option>
+              <option>HVAC</option>
+              <option>Electrical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="task-row">
+          <div class="form-field">
+            <label for="task-date">Target Date</label>
+            <input id="task-date" type="date">
+          </div>
+          <div class="form-field">
+            <label for="task-attachment">Attachment</label>
+            <label class="task-upload" for="task-attachment">
+              <span class="task-upload-text">Upload Files</span>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M10 13V3m0 0L6 7m4-4l4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </label>
+            <input class="visually-hidden" id="task-attachment" type="file">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <div class="field-label-row">
+            <label for="task-assignee">Assign To <span>*</span></label>
+          </div>
+          <button class="assign-me" type="button">Assign to me</button>
+          <input id="task-assignee" type="search" placeholder="Search colleagues.." required>
+        </div>
+      </div>
+
+      <footer class="task-dialog-footer">
+        <button class="submit-project-btn task-submit" type="submit">Create Task</button>
+        <button class="task-discard" type="button" data-close-task-dialog>Discard</button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<div class="dashboard-view" id="dashboard-view">
 <section class="greeting-card">
   <div class="greeting-text">
     <h1>Good Morning, Apurva !</h1>
@@ -416,7 +567,14 @@ Logout
         <td><span class="status overdue">Overdue</span></td>
         <td>Lodha One • Wing 25</td>
         <td>Apurva Bhadange</td>
-        <td><button class="comment-btn">💬 Comment</button></td>
+        <td>
+  <button class="comment-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Comment
+          </button>
+        </td>
       </tr>
       <tr>
         <td>
@@ -438,7 +596,14 @@ Logout
         <td><span class="status due-today">Due Today</span></td>
         <td>Lodha One • Wing 25</td>
         <td>Apurva Bhadange</td>
-        <td><button class="comment-btn">💬 Comment</button></td>
+        <td>
+  <button class="comment-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Comment
+          </button>
+        </td>
       </tr>
       <tr>
         <td>
@@ -460,16 +625,102 @@ Logout
         <td><span class="status due-tomorrow">Due Tomorrow</span></td>
         <td>Lodha One • Wing 25</td>
         <td>Apurva Bhadange</td>
-        <td><button class="comment-btn">💬 Comment</button></td>
+        <td>
+  <button class="comment-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Comment
+           </button>
+        </td>
       </tr>
     </tbody>
   </table>
-  </div>
+</div>
 
-  <a href="#" class="view-all">View All Tasks ↗</a>
+<a href="#" class="view-all">View All Tasks <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path d="M5.33398 10.6666L10.6673 5.33331M10.6673 9.33331V5.33331H6.66732" stroke="#644235" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></a>
 </section>
 
+</div>
 
+<section class="projects-view" id="projects-view" hidden>
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="#dashboard" data-view-target="dashboard">Dashboard</a>
+    <span aria-hidden="true">›</span>
+    <a href="#projects" data-view-target="projects">Projects</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">Lodha Belmondo</span>
+  </nav>
+
+  <div class="project-toolbar">
+    <label class="project-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"></circle><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+      <input id="project-search" type="search" aria-label="Search projects" placeholder="Search projects">
+    </label>
+    <div class="project-toolbar-actions">
+      <label class="project-status-filter">
+        <span class="visually-hidden">Filter by status</span>
+        <select id="project-status-filter">
+          <option value="all">Filter by Status</option>
+          <option value="on-track">On Track</option>
+          <option value="on-hold">On Hold</option>
+        </select>
+      </label>
+      <button class="starred-filter" type="button" aria-pressed="false"><span aria-hidden="true">☆</span> Starred Projects</button>
+    </div>
+  </div>
+
+  <div class="project-grid" id="project-grid">
+    <article class="project-card" data-project-card data-status="on-track" data-starred="false">
+      <div class="project-card-top"><span class="project-building-icon" aria-hidden="true">▥</span><span class="project-state on-track"><i></i> On Track</span><button class="project-star" type="button" aria-label="Add Lodha Belmondo to starred projects" aria-pressed="false">☆</button></div>
+      <h2>Lodha Belmondo</h2><p class="project-meta">LB-K <span>•</span> Residential Development</p>
+      <div class="project-progress-label"><span>Project Progress</span><strong>65%</strong></div><div class="project-progress"><span style="width:65%"></span></div>
+      <div class="project-metrics"><span>◉ <strong>18</strong> Tasks <em>1 delayed</em></span><span>◉ <strong>9</strong> RFIs</span><span>◉ <strong>12</strong> Deliverables</span></div>
+      <div class="project-milestone"><span class="milestone-icon" aria-hidden="true">▣</span><span><small>Next Milestone</small><strong>Facade package issue <b>— Sep 5</b></strong></span></div>
+      <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Updated 2h ago</small></span><span class="stakeholder-avatars"><i>SR</i><i>PM</i><i>AB</i></span></div>
+      <a class="workspace-link" href="#project-workspace">Open Project Workspace <span aria-hidden="true">→</span></a>
+    </article>
+
+    <article class="project-card" data-project-card data-status="on-track" data-starred="false">
+      <div class="project-card-top"><span class="project-building-icon" aria-hidden="true">▥</span><span class="project-state on-track"><i></i> On Track</span><button class="project-star" type="button" aria-label="Add Lodha Belmondo to starred projects" aria-pressed="false">☆</button></div>
+      <h2>Lodha Belmondo</h2><p class="project-meta">LB-K <span>•</span> Residential Development <span>•</span> 4 Towers <span>•</span> 1 MLCP</p>
+      <div class="project-progress-label"><span>Project Progress</span><strong>65%</strong></div><div class="project-progress"><span style="width:65%"></span></div>
+      <div class="project-metrics"><span>◉ <strong>18</strong> Tasks <em>1 delayed</em></span><span>◉ <strong>9</strong> RFIs</span><span>◉ <strong>12</strong> Deliverables</span></div>
+      <div class="project-milestone"><span class="milestone-icon" aria-hidden="true">▣</span><span><small>Next Milestone</small><strong>Facade package issue <b>— Sep 5</b></strong></span></div>
+      <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Updated 2h ago</small></span><span class="stakeholder-avatars"><i>SR</i><i>PM</i><i>AB</i></span></div>
+    </article>
+
+    <article class="project-card" data-project-card data-status="on-track" data-starred="false">
+      <div class="project-card-top"><span class="project-building-icon" aria-hidden="true">▥</span><span class="project-state on-track"><i></i> On Track</span><button class="project-star" type="button" aria-label="Add Lodha Belmondo to starred projects" aria-pressed="false">☆</button></div>
+      <h2>Lodha Belmondo</h2><p class="project-meta">LB-K <span>•</span> Residential Development <span>•</span> 4 Towers <span>•</span> 1 MLCP</p>
+      <div class="project-progress-label"><span>Project Progress</span><strong>65%</strong></div><div class="project-progress"><span style="width:65%"></span></div>
+      <div class="project-metrics"><span>◉ <strong>18</strong> Tasks <em>1 delayed</em></span><span>◉ <strong>9</strong> RFIs</span><span>◉ <strong>12</strong> Deliverables</span></div>
+      <div class="project-milestone"><span class="milestone-icon" aria-hidden="true">▣</span><span><small>Next Milestone</small><strong>Facade package issue <b>— Sep 5</b></strong></span></div>
+      <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Updated 2h ago</small></span><span class="stakeholder-avatars"><i>SR</i><i>PM</i><i>AB</i></span></div>
+    </article>
+
+    <article class="project-card" data-project-card data-status="on-track" data-starred="false">
+      <div class="project-card-top"><span class="project-building-icon" aria-hidden="true">▥</span><span class="project-state on-track"><i></i> On Track</span><button class="project-star" type="button" aria-label="Add Lodha Belmondo to starred projects" aria-pressed="false">☆</button></div>
+      <h2>Lodha Belmondo</h2><p class="project-meta">LB-K <span>•</span> Residential Development <span>•</span> 4 Towers <span>•</span> 1 MLCP</p>
+      <div class="project-progress-label"><span>Project Progress</span><strong>65%</strong></div><div class="project-progress"><span style="width:65%"></span></div>
+      <div class="project-metrics"><span>◉ <strong>18</strong> Tasks <em>1 delayed</em></span><span>◉ <strong>9</strong> RFIs</span><span>◉ <strong>12</strong> Deliverables</span></div>
+      <div class="project-milestone"><span class="milestone-icon" aria-hidden="true">▣</span><span><small>Next Milestone</small><strong>Facade package issue <b>— Sep 5</b></strong></span></div>
+      <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Updated 2h ago</small></span><span class="stakeholder-avatars"><i>SR</i><i>PM</i><i>AB</i></span></div>
+    </article>
+
+    <article class="project-card project-card-hold" data-project-card data-status="on-hold" data-starred="false">
+      <div class="project-card-top"><span class="project-building-icon" aria-hidden="true">▥</span><span class="project-state on-hold">• On Hold</span><button class="project-star" type="button" aria-label="Add Lodha Belmondo to starred projects" aria-pressed="false">☆</button></div>
+      <h2>Lodha Belmondo</h2><p class="project-meta">LB-K <span>•</span> Residential Development <span>•</span> 4 Towers <span>•</span> 1 MLCP</p>
+      <div class="project-progress-label"><span>Project Progress</span><strong>25%</strong></div><div class="project-progress"><span style="width:25%"></span></div>
+      <div class="project-metrics"><span>◉ <strong>18</strong> Tasks <em>1 delayed</em></span><span>◉ <strong>9</strong> RFIs</span><span>◉ <strong>12</strong> Deliverables</span></div>
+      <div class="project-milestone milestone-inactive"><span class="milestone-icon" aria-hidden="true">▣</span><strong>No active milestone</strong></div>
+      <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Updated 2h ago</small></span><span class="stakeholder-avatars"><i>SR</i><i>PM</i><i>AB</i></span></div>
+    </article>
+  </div>
+  <p class="empty-projects" hidden>No projects match these filters.</p>
+</section>
 
     </main>
   <aside class="right-rail">Right rail</aside>
