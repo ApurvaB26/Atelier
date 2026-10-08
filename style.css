@@ -3023,6 +3023,49 @@ body.project-dialog-open {
   place-items: center;
 }
 
+.more-menu {
+  position: relative;
+}
+
+.menu-card {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  padding: 4px 0;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: var(--white);
+  box-shadow: 0 12px 26px rgba(28, 27, 27, 0.15);
+}
+
+.menu-card[hidden] {
+  display: none;
+}
+
+.menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 0;
+  background: var(--white);
+  color: var(--dark-brown);
+  font: 500 14px var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: var(--main-bg);
+}
+
+.menu-item:nth-child(3) {
+  border-top: 1px solid var(--stroke);
+}
+
 /*PROJECT PROGRESS CARD*/
 .project-progress-card {
   padding: 16px 20px;
@@ -3120,3 +3163,4 @@ body.project-dialog-open {
 .project-stat-icon.transmittal { background: var(--purple-light); color: var(--purple); }
 .project-stat-icon.meetings { background: var(--in-progress-light); color: var(--in-progress); }
 .project-stat-icon.team { background: var(--success-light); color: var(--success); }
+

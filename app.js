@@ -628,3 +628,20 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") taskBackdrop.hidden = true;
 });
+
+/* MORE MENU */
+const moreBtn = document.querySelector(".more-btn");
+const menuCard = document.querySelector(".menu-card");
+
+moreBtn.addEventListener("click", () => {
+  menuCard.hidden = !menuCard.hidden;
+  moreBtn.setAttribute("aria-expanded", String(!menuCard.hidden));
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".more-menu")) menuCard.hidden = true;
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") menuCard.hidden = true;
+});
