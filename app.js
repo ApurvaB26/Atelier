@@ -540,3 +540,91 @@ taskForm.addEventListener('submit', (event) => {
   document.body.append(toast);
   window.setTimeout(() => toast.remove(), 3500);
 });
+
+/* BREADCRUMB */
+function renderBreadcrumb(trail) {
+  const items = [{ label: "Atelier", view: "dashboard" }, ...trail];
+
+  document.getElementById("breadcrumb").innerHTML = items
+    .map((item, i) =>
+      i === items.length - 1
+        ? `<span class="current">${item.label}</span>`
+        : `<a href="#${item.view}" data-view-target="${item.view}">${item.label}</a>`
+    )
+    .join("<span>›</span>");
+}
+
+function sidebarLabel(key) {
+  const link = document.querySelector(`.nav-bar [data-view-target="${key}"]`);
+  return link ? link.textContent.trim() : "Dashboard";
+}
+
+document.addEventListener("click", (e) => {
+  // Sidebar links and breadcrumb links
+  const viewLink = e.target.closest("[data-view-target]");
+  if (viewLink) {
+    renderBreadcrumb([{ label: sidebarLabel(viewLink.dataset.viewTarget) }]);
+    return;
+  }
+
+  // Open a project: label comes from the card's title
+  const openLink = e.target.closest(".workspace-link");
+  if (openLink) {
+    const name = openLink.closest("[data-project-card]").querySelector("h2").textContent;
+    renderBreadcrumb([
+      { label: "Projects", view: "projects" },
+      { label: name }
+    ]);
+  }
+});
+
+renderBreadcrumb([{ label: sidebarLabel(location.hash.replace("#", "") || "dashboard") }]);
+
+function addWorkspaceLink(card) {
+  if (card.querySelector(".workspace-link")) return;
+  card.insertAdjacentHTML("beforeend", `
+    <a class="workspace-link" href="#project-workspace">
+      Open Project Workspace <span aria-hidden="true">→</span>
+    </a>
+  `);
+}
+
+document.querySelectorAll("[data-project-card]").forEach(addWorkspaceLink);
+
+/* OPEN PROJECT OVERVIEW PAGE */
+const overviewPage = document.getElementById("overview-page");
+
+document.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-project-card]");
+
+  if (card && !e.target.closest(".project-star")) {
+    const name = card.querySelector("h2").textContent;
+
+    document.getElementById("dashboard-view").hidden = true;
+    document.getElementById("projects-view").hidden = true;
+    overviewPage.hidden = false;
+
+    overviewPage.querySelector(".project-title").textContent = name;
+    renderBreadcrumb([{ label: "Projects", view: "projects" }, { label: name }]);
+    return;
+  }
+
+  if (e.target.closest("[data-view-target]")) overviewPage.hidden = true;
+});
+
+/* CREATE TASK MODAL */
+const taskBackdrop = document.getElementById("task-dialog-backdrop");
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".create-task-btn")) {
+    taskBackdrop.hidden = false;
+  }
+
+  if (e.target.closest("[data-close-task-dialog]") || e.target === taskBackdrop) {
+    taskBackdrop.hidden = true;
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") taskBackdrop.hidden = true;
+});
