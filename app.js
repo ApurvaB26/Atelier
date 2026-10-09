@@ -430,6 +430,41 @@ attachmentDropzone.addEventListener('drop', (event) => {
   setAttachment(file);
 });
 
+function createProjectCard(data) {
+  const name = data.get('projectName');
+  const code = data.get('projectCode');
+  const category = data.get('category');
+  const meta = [code, category].filter(Boolean).join(' • ');
+
+  const card = document.createElement('article');
+  card.className = 'project-card';
+  card.dataset.projectCard = '';
+  card.dataset.status = 'on-track';
+  card.dataset.starred = 'false';
+
+  card.innerHTML = `
+    <div class="project-card-top">
+      <span class="project-building-icon" aria-hidden="true">▥</span>
+      <span class="project-state on-track"><i></i> On Track</span>
+      <button class="project-star" type="button" aria-pressed="false">☆</button>
+    </div>
+    <h2></h2>
+    <p class="project-meta"></p>
+    <div class="project-progress-label"><span>Project Progress</span><strong>0%</strong></div>
+    <div class="project-progress"><span style="width:0%"></span></div>
+    <div class="project-metrics"><span>◉ <strong>0</strong> Tasks</span><span>◉ <strong>0</strong> RFIs</span><span>◉ <strong>0</strong> Deliverables</span></div>
+    <div class="project-milestone milestone-inactive"><span class="milestone-icon" aria-hidden="true">▣</span><strong>No active milestone</strong></div>
+    <div class="project-stakeholders"><span><small>Project Stakeholders</small><small>Just now</small></span></div>
+  `;
+
+  card.querySelector('h2').textContent = name;
+  card.querySelector('.project-meta').textContent = meta;
+  card.querySelector('.project-star').setAttribute('aria-label', `Add ${name} to starred projects`);
+
+  addWorkspaceLink(card);
+  document.getElementById('project-grid').prepend(card);
+}
+
 projectForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -445,6 +480,11 @@ projectForm.addEventListener('submit', (event) => {
   }
 
   if (!projectForm.reportValidity()) return;
+    if (!projectForm.reportValidity()) return;
+
+  createProjectCard(new FormData(projectForm));
+
+  closeProjectDialog();
 
   closeProjectDialog();
   projectForm.reset();
@@ -560,6 +600,7 @@ function sidebarLabel(key) {
 }
 
 document.addEventListener("click", (e) => {
+
   // Sidebar links and breadcrumb links
   const viewLink = e.target.closest("[data-view-target]");
   if (viewLink) {
@@ -644,4 +685,120 @@ document.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") menuCard.hidden = true;
+});
+
+//TOWER FILTER BUTTON
+const towerBtn = document.querySelector(".tower-filter");
+const towerMenu = document.querySelector(".tower-menu");
+const starredBtn = document.querySelector(".starred-towers-btn");
+
+towerBtn.addEventListener("click", () => {
+  towerMenu.hidden = !towerMenu.hidden;
+});
+
+towerMenu.addEventListener("click", (e) => {
+  const star = e.target.closest(".tower-star");
+  if (star) {
+    const on = star.getAttribute("aria-pressed") === "true";
+    star.setAttribute("aria-pressed", String(!on));
+    applyStarredFilter();
+    return;
+  }
+
+  const name = e.target.closest(".tower-name");
+  if (name) {
+    document.querySelector(".tower-filter-label").textContent = name.textContent;
+    towerMenu.hidden = true;
+  }
+});
+
+starredBtn.addEventListener("click", () => {
+  const on = starredBtn.getAttribute("aria-pressed") === "true";
+  starredBtn.setAttribute("aria-pressed", String(!on));
+  applyStarredFilter();
+});
+
+function applyStarredFilter() {
+  const onlyStarred = starredBtn.getAttribute("aria-pressed") === "true";
+  towerMenu.querySelectorAll(".tower-row").forEach((row) => {
+    const star = row.querySelector(".tower-star");
+    row.hidden = onlyStarred && star && star.getAttribute("aria-pressed") !== "true";
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".tower-dropdown")) towerMenu.hidden = true;
+});
+
+/* COLLAPSE SIDEBAR */
+document.querySelector(".collapse-btn").addEventListener("click", () => {
+  document.querySelector(".app").classList.toggle("sidebar-collapsed");
+});
+
+/* RIGHT RAIL CALENDAR */
+const calendarBtn = document.querySelector(".rail-calendar-btn");
+const railCalendar = document.getElementById("rail-calendar");
+let viewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let selectedDate = null;
+
+function renderRailCalendar() {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const todayString = new Date().toDateString();
+
+  railCalendar.querySelector(".calendar-month-label").textContent =
+    viewDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+  const start = new Date(year, month, 1 - viewDate.getDay());
+  let html = "";
+
+  for (let i = 0; i < 42; i++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+
+    let classes = "calendar-day";
+    if (day.getMonth() !== month) classes += " outside-month";
+    if (day.toDateString() === todayString) classes += " is-today";
+    if (selectedDate && day.toDateString() === selectedDate) classes += " is-selected";
+
+    html += `<button class="${classes}" type="button" data-date="${day.toDateString()}">${day.getDate()}</button>`;
+  }
+
+  railCalendar.querySelector(".calendar-days").innerHTML = html;
+}
+
+// The toggle: this is the part to remember
+calendarBtn.addEventListener("click", () => {
+  railCalendar.hidden = !railCalendar.hidden;
+});
+
+railCalendar.querySelector(".calendar-month-prev").addEventListener("click", () => {
+  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+  renderRailCalendar();
+});
+
+railCalendar.querySelector(".calendar-month-next").addEventListener("click", () => {
+  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+  renderRailCalendar();
+});
+
+railCalendar.querySelector(".calendar-days").addEventListener("click", (e) => {
+  const dayBtn = e.target.closest(".calendar-day");
+  if (!dayBtn) return;
+  selectedDate = dayBtn.dataset.date;
+  renderRailCalendar();
+});
+
+renderRailCalendar();
+
+/* CLOSE CALENDAR ON OUTSIDE CLICK */
+document.addEventListener("click", (e) => {
+  const path = e.composedPath();
+  const clickedInside = path.includes(railCalendar) || path.includes(calendarBtn);
+
+  if (!clickedInside) railCalendar.hidden = true;
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") railCalendar.hidden = true;
 });
