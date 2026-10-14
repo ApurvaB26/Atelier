@@ -1181,13 +1181,17 @@ function updateTaskDueLabel(row, dateValue) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const difference = Math.round((dueDate - today) / 86400000);
+  const dateParts = new Intl.DateTimeFormat("en", {
+    weekday: "short", month: "short", day: "numeric"
+  }).formatToParts(dueDate);
+  const farDateLabel = `${dateParts.find((part) => part.type === "weekday").value}. ${dateParts.find((part) => part.type === "month").value} ${dateParts.find((part) => part.type === "day").value}`;
   status.textContent = difference < 0
     ? "Overdue"
     : difference === 0
       ? "Due Today"
       : difference === 1
         ? "Due Tomorrow"
-        : `Due ${new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(dueDate)}`;
+        : farDateLabel;
   status.className = `status ${difference < 0 ? "overdue" : difference === 0 ? "due-today" : difference === 1 ? "due-tomorrow" : "due-date"}`;
 }
 
