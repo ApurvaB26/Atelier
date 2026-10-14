@@ -571,6 +571,17 @@ taskForm.addEventListener('submit', (event) => {
   event.preventDefault();
   if (!taskForm.reportValidity()) return;
 
+  if (!projectTasksView.hidden) {
+    addProjectTask({
+      title: document.getElementById('task-title').value.trim(),
+      description: document.getElementById('task-description').value.trim(),
+      priority: document.getElementById('task-priority').value,
+      discipline: document.getElementById('task-discipline').value,
+      targetDate: document.getElementById('task-date').value,
+      assignee: taskAssigneeInput.value.trim()
+    });
+  }
+
   closeTaskDialog();
 
   const toast = document.createElement('div');
@@ -634,6 +645,158 @@ document.querySelectorAll("[data-project-card]").forEach(addWorkspaceLink);
 
 /* OPEN PROJECT OVERVIEW PAGE */
 const overviewPage = document.getElementById("overview-page");
+const projectOverviewContent = document.getElementById("project-overview-content");
+const projectTasksView = document.getElementById("project-tasks-view");
+const projectTaskList = document.getElementById("project-task-list");
+const projectTaskSearch = document.getElementById("project-task-search");
+const projectTaskStatusFilter = document.getElementById("project-task-status-filter");
+let projectTaskPriorityFilter = "all";
+
+function setProjectView(viewName) {
+  const showTasks = viewName === "tasks";
+  projectOverviewContent.hidden = showTasks;
+  projectTasksView.hidden = !showTasks;
+  document.querySelectorAll("[data-project-view]").forEach((tab) => {
+    const isActive = tab.dataset.projectView === viewName;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function taskMatchesProjectFilters(row) {
+  const query = projectTaskSearch.value.trim().toLocaleLowerCase();
+  const priorityMatches = projectTaskPriorityFilter === "all" || row.dataset.priority === projectTaskPriorityFilter;
+  const statusMatches = projectTaskStatusFilter.value === "all" || row.dataset.group === projectTaskStatusFilter.value;
+  return priorityMatches && statusMatches && row.textContent.toLocaleLowerCase().includes(query);
+}
+
+function filterProjectTasks() {
+  const matchingGroups = new Set();
+
+  projectTaskList.querySelectorAll("[data-task-row]").forEach((row) => {
+    const matches = taskMatchesProjectFilters(row);
+    const groupHeader = projectTaskList.querySelector(`[data-group-header="${row.dataset.group}"]`);
+    const groupExpanded = groupHeader.querySelector(".task-group-toggle").getAttribute("aria-expanded") === "true";
+    row.hidden = !matches || !groupExpanded;
+    if (matches) matchingGroups.add(row.dataset.group);
+  });
+
+  projectTaskList.querySelectorAll("[data-group-header]").forEach((header) => {
+    const group = header.dataset.groupHeader;
+    const matchingCount = Array.from(projectTaskList.querySelectorAll(`[data-task-row][data-group="${group}"]`))
+      .filter(taskMatchesProjectFilters).length;
+    header.hidden = matchingCount === 0;
+    header.querySelector("[data-task-group-count]").textContent = String(matchingCount).padStart(2, "0");
+  });
+}
+
+function updateProjectTaskCounts() {
+  projectTaskList.querySelectorAll("[data-group-header]").forEach((header) => {
+    const group = header.dataset.groupHeader;
+    const count = projectTaskList.querySelectorAll(`[data-task-row][data-group="${group}"]`).length;
+    header.querySelector("[data-task-group-count]").textContent = String(count).padStart(2, "0");
+  });
+}
+
+function getProjectTaskGroup(status) {
+  if (status === "Completed") return "completed";
+  if (status === "In Review") return "in-review";
+  if (status === "In Progress" || status === "On Hold") return "in-progress";
+  return "todo";
+}
+
+function addProjectTask(data) {
+  const nextId = Math.max(17, ...Array.from(projectTaskList.querySelectorAll("[data-task-row]"), (row) => {
+    const id = Number(row.cells[1].textContent.replace(/\D/g, ""));
+    return Number.isFinite(id) ? id : 0;
+  })) + 1;
+  const priority = data.priority.toLocaleLowerCase();
+  const row = document.createElement("tr");
+  row.className = "project-task-row";
+  row.dataset.taskRow = "";
+  row.dataset.group = "todo";
+  row.dataset.taskStatus = "Not Started";
+  row.dataset.priority = priority;
+  row.dataset.targetDate = data.targetDate;
+  row.dataset.description = data.description;
+  row.innerHTML = `
+    <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox"><span class="checkbox-box"></span></label></td>
+    <td></td><td><strong></strong><span class="row-subtitle"></span></td>
+    <td><span class="badge"></span></td><td><span class="status due-date"></span></td>
+    <td>Wing 25</td><td></td><td><button class="comment-btn project-task-action" type="button" data-open-task-details>Comment</button></td>
+  `;
+  row.cells[1].textContent = `T-${nextId}`;
+  row.querySelector("td:nth-child(3) strong").textContent = data.title;
+  row.querySelector(".row-subtitle").textContent = data.discipline;
+  row.querySelector(".badge").classList.add(priority);
+  row.querySelector(".badge").textContent = data.priority;
+  row.cells[6].textContent = data.assignee;
+  row.querySelector(".task-checkbox").setAttribute("aria-label", `Complete ${data.title}`);
+  if (data.targetDate) updateTaskDueLabel(row, data.targetDate);
+  projectTaskList.querySelector('[data-group-header="todo"]').after(row);
+  updateProjectTaskCounts();
+  filterProjectTasks();
+}
+
+document.querySelectorAll("[data-project-view]").forEach((tab) => {
+  tab.addEventListener("click", () => setProjectView(tab.dataset.projectView));
+});
+
+document.querySelectorAll("[data-priority-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    projectTaskPriorityFilter = button.dataset.priorityFilter;
+    document.querySelectorAll("[data-priority-filter]").forEach((filterButton) => {
+      const isSelected = filterButton === button;
+      filterButton.classList.toggle("is-active", isSelected);
+      filterButton.setAttribute("aria-pressed", String(isSelected));
+    });
+    filterProjectTasks();
+  });
+});
+
+projectTaskSearch.addEventListener("input", filterProjectTasks);
+projectTaskStatusFilter.addEventListener("change", filterProjectTasks);
+
+document.querySelector(".task-advanced-filter-button").addEventListener("click", (event) => {
+  const button = event.currentTarget;
+  const isExpanded = button.getAttribute("aria-expanded") === "true";
+  button.setAttribute("aria-expanded", String(!isExpanded));
+  document.getElementById("task-advanced-filters").hidden = isExpanded;
+});
+
+projectTaskList.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-toggle-task-group]");
+  if (!toggle) return;
+  const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+  toggle.setAttribute("aria-expanded", String(!isExpanded));
+  filterProjectTasks();
+});
+
+projectTaskList.querySelectorAll(".task-checkbox").forEach((checkbox) => {
+  checkbox.addEventListener("change", () => {
+    const row = checkbox.closest("[data-task-row]");
+    if (!row) return;
+    row.dataset.taskStatus = checkbox.checked ? "Completed" : "In Progress";
+    const oldGroup = row.dataset.group;
+    row.dataset.group = getProjectTaskGroup(row.dataset.taskStatus);
+    row.classList.toggle("done", checkbox.checked);
+    const groupHeader = projectTaskList.querySelector(`[data-group-header="${row.dataset.group}"]`);
+    groupHeader.after(row);
+    updateProjectTaskCounts();
+    filterProjectTasks();
+    if (oldGroup !== row.dataset.group) addTaskActivity(row, `Status changed to ${row.dataset.taskStatus}`);
+  });
+});
+
+projectTaskList.addEventListener("click", (event) => {
+  const action = event.target.closest("[data-open-task-details]");
+  if (!action) return;
+  const row = action.closest("[data-task-row]");
+  if (row) {
+    row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    document.getElementById("drawer-comment-input").focus();
+  }
+});
 
 document.addEventListener("click", (e) => {
   const card = e.target.closest("[data-project-card]");
@@ -646,6 +809,7 @@ document.addEventListener("click", (e) => {
     overviewPage.hidden = false;
 
     overviewPage.querySelector(".project-title").textContent = name;
+    setProjectView("overview");
     renderBreadcrumb([{ label: "Projects", view: "projects" }, { label: name }]);
     return;
   }
@@ -1197,7 +1361,7 @@ function updateTaskDueLabel(row, dateValue) {
 
 document.addEventListener("click", (e) => {
   // Click a task row (but not its checkbox or buttons)
-  const row = e.target.closest(".table-scroll tbody tr");
+  const row = e.target.closest(".table-scroll tbody tr, .project-task-table tbody tr");
   if (row && !e.target.closest(".custom-checkbox, button")) {
     const cells = row.querySelectorAll("td");
     const id = cells[1].textContent.trim();
@@ -1329,7 +1493,14 @@ document.querySelector(".drawer-save").addEventListener("click", () => {
   if (discipline) discipline.textContent = drawerDiscipline.value;
   updateTaskDueLabel(activeTaskRow, drawerDueDate.value);
   if (changes.length) addTaskActivity(activeTaskRow, changes.join(" · "));
-  updateTaskCount();
+  if (activeTaskRow.matches("[data-task-row]")) {
+    activeTaskRow.dataset.group = getProjectTaskGroup(drawerStatus.dataset.value);
+    projectTaskList.querySelector(`[data-group-header="${activeTaskRow.dataset.group}"]`).after(activeTaskRow);
+    updateProjectTaskCounts();
+    filterProjectTasks();
+  } else {
+    updateTaskCount();
+  }
   closeDrawer();
 });
 
