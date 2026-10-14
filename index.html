@@ -457,6 +457,162 @@ Logout
   </section>
 </div>
 
+<div class="dialog-backdrop" id="notes-dialog-backdrop" hidden>
+  <section class="notes-dialog" role="dialog" aria-modal="true" aria-labelledby="notes-dialog-title">
+    <header class="notes-dialog-header">
+      <div>
+        <h2 id="notes-dialog-title">Minutes of meeting</h2>
+        <p>Saved here on this meeting — every meeting keeps its own record.</p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Close" data-close-notes-dialog>&times;</button>
+    </header>
+
+    <form class="notes-form" id="notes-form">
+      <div class="notes-fields">
+
+        <div class="notes-row">
+          <div class="form-field">
+            <label for="notes-subject">Meeting Subject</label>
+            <input id="notes-subject" placeholder="e.g. Elanor Coordination Meeting">
+          </div>
+          <div class="form-field">
+            <label for="notes-date">Date</label>
+            <input id="notes-date" type="date">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <span class="notes-label">Generate Via</span>
+          <div class="notes-generate">
+            <button class="notes-option" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 6v12M12 3v18M16 8v8M20 11v2"/></svg>
+              Existing Recording
+            </button>
+            <label class="notes-upload" for="notes-file">
+              <span><strong>Upload Files</strong><small>Pdf, Word, JPG, PNG, Excel</small></span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 13V3m0 0L6 7m4-4l4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </label>
+            <input class="visually-hidden" id="notes-file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="notes-text">Minutes / points discussed</label>
+          <textarea id="notes-text" placeholder="Decisions, action items, who owns what, follow-up date..."></textarea>
+          <div class="notes-ai-row">
+            <button class="notes-ai-btn" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 7.5c.9 4.4 2.3 5.8 6.7 6.7-4.4.9-5.8 2.3-6.7 6.7-.9-4.4-2.3-5.8-6.7-6.7 4.4-.9 5.8-2.3 6.7-6.7ZM18 3v4M16 5h4"/></svg>
+              Summarize with AI
+            </button>
+            <span class="notes-count" id="notes-count">0 characters</span>
+          </div>
+        </div>
+
+      </div>
+
+      <footer class="notes-footer">
+        <div class="notes-meta">
+          <p>Recorded by: <span>Apurva Bhadange</span></p>
+          <div class="notes-notify">
+            <label class="custom-checkbox">
+              <input class="task-checkbox" id="notes-notify" type="checkbox">
+              <span class="checkbox-box"></span>
+            </label>
+            <label for="notes-notify">Notify meeting participants via email</label>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="cancel-project-btn" type="button" data-close-notes-dialog>Cancel</button>
+          <button class="submit-project-btn" type="submit">Save Changes</button>
+        </div>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<div class="drawer-backdrop" id="task-drawer-backdrop" hidden>
+  <aside class="task-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+
+    <header class="drawer-header">
+      <button class="drawer-close" type="button" aria-label="Close" data-close-drawer>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <h2>Task Details</h2>
+      <button class="more-btn" type="button" aria-label="More options">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="3" cy="8" r="1.25" fill="currentColor"/><circle cx="8" cy="8" r="1.25" fill="currentColor"/><circle cx="13" cy="8" r="1.25" fill="currentColor"/></svg>
+      </button>
+    </header>
+
+    <div class="drawer-body">
+      <p class="drawer-meta" id="drawer-meta"></p>
+      <h3 class="drawer-title" id="drawer-title"></h3>
+      <p class="drawer-description" id="drawer-description"></p>
+
+      <div class="drawer-detail-grid">
+        <div class="drawer-detail"><span>Status</span><details class="drawer-custom-select" data-drawer-select="status">
+          <summary aria-label="Select task status"><span class="drawer-selected-dot"></span><span class="drawer-selected-value">In Progress</span><span class="drawer-chevron" aria-hidden="true"></span></summary>
+          <div class="drawer-select-options" role="listbox" aria-label="Task status">
+            <button class="drawer-select-option" type="button" role="option" data-value="Not Started" data-color="status-not-started"><i></i><span>Not Started</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+            <button class="drawer-select-option" type="button" role="option" data-value="In Progress" data-color="status-in-progress"><i></i><span>In Progress</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+            <button class="drawer-select-option" type="button" role="option" data-value="On Hold" data-color="status-on-hold"><i></i><span>On Hold</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+            <button class="drawer-select-option" type="button" role="option" data-value="Completed" data-color="status-completed"><i></i><span>Completed</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+          </div>
+        </details></div>
+        <div class="drawer-detail"><span>Priority</span><details class="drawer-custom-select" data-drawer-select="priority">
+          <summary aria-label="Select task priority"><span class="drawer-selected-dot"></span><span class="drawer-selected-value">Medium</span><span class="drawer-chevron" aria-hidden="true"></span></summary>
+          <div class="drawer-select-options" role="listbox" aria-label="Task priority">
+            <button class="drawer-select-option" type="button" role="option" data-value="High" data-color="priority-high"><i></i><span>High</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+            <button class="drawer-select-option" type="button" role="option" data-value="Medium" data-color="priority-medium"><i></i><span>Medium</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+            <button class="drawer-select-option" type="button" role="option" data-value="Low" data-color="priority-low"><i></i><span>Low</span><span class="drawer-option-check" aria-hidden="true">✓</span></button>
+          </div>
+        </details></div>
+        <label class="drawer-detail"><span>Target date</span><span class="drawer-control date-control"><input id="drawer-due-date" type="date" aria-label="Task target date"></span></label>
+        <label class="drawer-detail"><span>Discipline</span><span class="drawer-control"><select id="drawer-discipline" aria-label="Task discipline"><option>General</option><option>Plumbing</option><option>Coordinated</option><option>Mechanical</option><option>Electrical</option><option>HVAC</option></select><span class="drawer-chevron" aria-hidden="true"></span></span></label>
+      </div>
+
+      <section class="drawer-section">
+        <h4>Dependency</h4>
+        <div class="drawer-item-list" id="drawer-dependency-list"><p class="drawer-empty">No dependencies recorded.</p></div>
+        <form class="drawer-inline-form" id="drawer-dependency-form" hidden>
+          <input id="drawer-dependency-input" type="text" placeholder="Enter dependency" aria-label="Task dependency">
+          <button type="submit">Add</button>
+          <button type="button" class="drawer-inline-cancel" data-cancel-dependency>Cancel</button>
+        </form>
+        <button class="drawer-add-action" type="button" data-add-dependency>+ Add dependency</button>
+      </section>
+
+      <section class="drawer-section">
+        <h4>Attachments</h4>
+        <div class="drawer-item-list" id="drawer-attachment-list"><p class="drawer-empty">No attachments.</p></div>
+        <input class="visually-hidden" id="drawer-attachment-input" type="file" multiple>
+        <button class="drawer-add-action" type="button" data-add-attachment>+ Add attachment</button>
+      </section>
+
+      <section class="drawer-section">
+        <h4>Activity</h4>
+        <div class="drawer-activity-list" id="drawer-activity-list"></div>
+      </section>
+
+      <section class="drawer-section">
+        <h4>Comments</h4>
+        <div class="drawer-comments" id="drawer-comments-list"><p class="drawer-empty">No comments yet.</p></div>
+        <form class="drawer-comment-form" id="drawer-comment-form">
+          <input id="drawer-comment-input" type="text" placeholder="Add a comment..." aria-label="Add a comment" autocomplete="off">
+          <button type="submit" aria-label="Send comment">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+      </section>
+    </div>
+
+    <footer class="drawer-footer">
+      <button class="submit-project-btn drawer-save" type="button">Save Changes</button>
+      <button class="task-discard" type="button" data-close-drawer>Discard</button>
+    </footer>
+
+  </aside>
+</div>
+
 <div class="dashboard-view" id="dashboard-view">
 <section class="greeting-card">
   <div class="greeting-text">
@@ -1156,6 +1312,17 @@ Logout
 <!--RIGHT RAIL-->
     <aside class="right-rail">
 
+      <div class="rail-mini">
+  <button class="rail-expand-btn" type="button" aria-label="Expand panel">
+    <span class="rail-mini-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    </span>
+    <span class="rail-mini-label">Expand</span>
+  </button>
+
+  <div class="rail-mini-list" id="rail-mini-list"></div>
+</div>
+      
   <header class="rail-header">
     <button class="rail-collapse-btn" type="button" aria-label="Collapse panel">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">

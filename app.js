@@ -767,7 +767,6 @@ function renderRailCalendar() {
   railCalendar.querySelector(".calendar-days").innerHTML = html;
 }
 
-// The toggle: this is the part to remember
 calendarBtn.addEventListener("click", () => {
   railCalendar.hidden = !railCalendar.hidden;
 });
@@ -822,6 +821,7 @@ function getChip(m) {
 }
 
 function createMeetingCard(m) {
+  
   const chip = getChip(m);
   const attendees = m.attendees
     ? `<span class="meeting-attendees">
@@ -833,7 +833,7 @@ function createMeetingCard(m) {
     : "";
 
   return `
-    <article class="meeting-card" tabindex="0">
+    <article class="meeting-card" tabindex="0" data-date="${new Date(m.start - m.start.getTimezoneOffset() * 60000).toISOString().slice(0, 10)}">
       <div class="meeting-status-row">
         <span class="meeting-status ${chip.cls}"><i></i>${chip.text}</span>
         ${attendees}
@@ -849,7 +849,7 @@ function createMeetingCard(m) {
           <strong class="meeting-title">${m.title}</strong>
           <span class="meeting-place">${m.place}</span>
           <div class="meeting-tools">
-            <button class="meeting-tool" type="button">
+            <button class="meeting-tool" type="button" data-action="notes">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               Notes
             </button>
@@ -881,3 +881,454 @@ function renderSchedule() {
 renderSchedule();
 setInterval(renderSchedule, 60000);
 
+const notesDialogBackdrop = document.getElementById("notes-dialog-backdrop");
+const notesSubjectInput = document.getElementById("notes-subject");
+const notesDateInput = document.getElementById("notes-date");
+let notesDialogReturnFocus = null;
+
+function openNotesDialog(meetingCard) {
+  notesDialogReturnFocus = document.activeElement;
+  notesSubjectInput.value = meetingCard.querySelector(".meeting-title").textContent;
+  notesDateInput.value = meetingCard.dataset.date;
+  notesDialogBackdrop.hidden = false;
+  document.body.classList.add("project-dialog-open");
+  notesSubjectInput.focus();
+}
+
+function closeNotesDialog() {
+  notesDialogBackdrop.hidden = true;
+  document.body.classList.remove("project-dialog-open");
+  notesDialogReturnFocus?.focus();
+}
+
+document.addEventListener("click", (event) => {
+  const notesButton = event.target.closest('[data-action="notes"]');
+  if (notesButton) {
+    openNotesDialog(notesButton.closest(".meeting-card"));
+    return;
+  }
+
+  if (event.target.closest("[data-close-notes-dialog]") || event.target === notesDialogBackdrop) {
+    closeNotesDialog();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !notesDialogBackdrop.hidden) closeNotesDialog();
+});
+
+/* COLLAPSED RIGHT RAIL ITEMS */
+document.querySelectorAll(".rail-collapse-btn, .rail-expand-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelector(".app").classList.toggle("rail-collapsed");
+  });
+});
+const svgOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`;
+
+const railIcons = {
+  calendar: `${svgOpen}<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  check:    `${svgOpen}<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`,
+  video:    `${svgOpen}<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>`,
+  cube:     `${svgOpen}<path d="M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7Z"/></svg>`
+};
+
+const healthData = { completed: 38, progress: 24, delayed: 4 };
+
+let overlayWeekOffset = 0;
+
+const railOverlays = {
+  calendar() {
+  const today = new Date();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay() + overlayWeekOffset * 7);
+
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    const isToday = d.toDateString() === today.toDateString();
+    return `<span class="${isToday ? "is-today" : ""}">${String(d.getDate()).padStart(2, "0")}</span>`;
+  }).join("");
+
+  const chevron = (points) =>
+    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="${points}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  return `
+    <div class="overlay-top overlay-top-calendar">
+      <strong class="overlay-month">${sunday.toLocaleString("en-US", { month: "long", year: "numeric" })}</strong>
+      <div class="overlay-arrows">
+        <button class="overlay-week-prev" type="button" aria-label="Previous week">${chevron("M10 12L6 8L10 4")}</button>
+        <button class="overlay-week-next" type="button" aria-label="Next week">${chevron("M6 12L10 8L6 4")}</button>
+      </div>
+    </div>
+    <div class="overlay-week overlay-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+    <div class="overlay-week">${days}</div>
+  `;
+},
+
+  meeting() {
+    const next = meetings
+      .filter((m) => m.end > Date.now())
+      .sort((a, b) => a.start - b.start)[0];
+
+    return `
+      <div class="overlay-top"><strong>Next meeting</strong><a href="#" class="rail-view-all">View All ↗</a></div>
+      ${next ? createMeetingCard(next) : '<p class="schedule-empty">No upcoming meetings</p>'}
+    `;
+  },
+
+  health() {
+    const total = healthData.completed + healthData.progress + healthData.delayed;
+    const row = (cls, label, n) =>
+      `<div class="overlay-row"><span class="overlay-dot ${cls}"></span>${label}<strong>${n}</strong></div>`;
+
+    return `
+      <div class="overlay-top">
+        <div><strong>Project health</strong><small>${total} Total Items</small></div>
+        <a href="#" class="rail-view-all">Details ↗</a>
+      </div>
+      ${row("success", "Completed", healthData.completed)}
+      ${row("progress", "In progress", healthData.progress)}
+      ${row("delayed", "Delayed", healthData.delayed)}
+    `;
+  }
+};
+
+const railMiniItems = [
+  { icon: "calendar", label: "Calendar",        sub: "Wed, 02 · Sep", divider: true, overlay: "calendar" },
+  { icon: "check",    label: "Needs you first", pill: "4 pending",    divider: true, red: true },
+  { icon: "video",    label: "Meetings",        count: "02", sub: "10:30", overlay: "meeting" },
+  { icon: "cube",     label: "Project health",  pill: "4 delayed",    divider: true, overlay: "health" }
+];
+
+function createRailMiniItem(item) {
+  return `
+    ${item.divider ? '<hr class="rail-mini-divider">' : ""}
+    <div class="rail-mini-item">
+      <span class="rail-mini-icon${item.red ? " red" : ""}">${railIcons[item.icon]}</span>
+      <span class="rail-mini-label">${item.label}${item.count ? ` <small class="rail-mini-count">${item.count}</small>` : ""}</span>
+      ${item.sub ? `<span class="rail-mini-sub">${item.sub}</span>` : ""}
+      ${item.pill ? `<span class="rail-mini-pill">${item.pill}</span>` : ""}
+      ${item.overlay ? `<div class="rail-overlay">${railOverlays[item.overlay]()}</div>` : ""}
+    </div>
+  `;
+}
+
+document.getElementById("rail-mini-list").innerHTML =
+  railMiniItems.map(createRailMiniItem).join("");
+
+  document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".overlay-week-prev, .overlay-week-next");
+  if (!btn) return;
+
+  overlayWeekOffset += btn.classList.contains("overlay-week-next") ? 1 : -1;
+  btn.closest(".rail-overlay").innerHTML = railOverlays.calendar();
+});
+
+/* TASK DETAILS DRAWER */
+const drawerBackdrop = document.getElementById("task-drawer-backdrop");
+const drawerStatus = document.querySelector('[data-drawer-select="status"]');
+const drawerPriority = document.querySelector('[data-drawer-select="priority"]');
+const drawerDueDate = document.getElementById("drawer-due-date");
+const drawerDiscipline = document.getElementById("drawer-discipline");
+const drawerCommentsList = document.getElementById("drawer-comments-list");
+const drawerCommentForm = document.getElementById("drawer-comment-form");
+const drawerDependencyList = document.getElementById("drawer-dependency-list");
+const drawerDependencyForm = document.getElementById("drawer-dependency-form");
+const drawerAttachmentList = document.getElementById("drawer-attachment-list");
+const drawerAttachmentInput = document.getElementById("drawer-attachment-input");
+const drawerActivityList = document.getElementById("drawer-activity-list");
+let activeTaskRow = null;
+
+function closeDrawer() {
+  drawerBackdrop.hidden = true;
+}
+
+function renderDrawerComments() {
+  const comments = JSON.parse(activeTaskRow.dataset.comments || "[]");
+  if (!comments.length) {
+    drawerCommentsList.innerHTML = '<p class="drawer-empty">No comments yet.</p>';
+    return;
+  }
+
+  drawerCommentsList.replaceChildren(...comments.map((comment) => {
+    const item = document.createElement("p");
+    item.className = "drawer-comment";
+    item.textContent = comment;
+    return item;
+  }));
+}
+
+function setDrawerSelect(dropdown, value) {
+  const options = Array.from(dropdown.querySelectorAll(".drawer-select-option"));
+  const selectedOption = options.find((option) => option.dataset.value === value) || options[0];
+  dropdown.dataset.value = selectedOption.dataset.value;
+  dropdown.querySelector(".drawer-selected-value").textContent = selectedOption.dataset.value;
+  dropdown.querySelector(".drawer-selected-dot").className = `drawer-selected-dot ${selectedOption.dataset.color}`;
+  options.forEach((option) => option.setAttribute("aria-selected", String(option === selectedOption)));
+}
+
+function getDrawerItems(row, key, legacyKey) {
+  const storedItems = row.dataset[key];
+  if (storedItems) {
+    try {
+      const parsedItems = JSON.parse(storedItems);
+      if (Array.isArray(parsedItems)) return parsedItems;
+      if (parsedItems) return [parsedItems];
+    } catch {
+      return [storedItems];
+    }
+  }
+  return row.dataset[legacyKey] ? [row.dataset[legacyKey]] : [];
+}
+
+function addTaskActivity(row, message) {
+  const activity = getDrawerItems(row, "activity", "");
+  activity.push(message);
+  row.dataset.activity = JSON.stringify(activity);
+  renderDrawerActivity(row);
+}
+
+function renderDrawerActivity(row) {
+  const activity = getDrawerItems(row, "activity", "");
+  if (!activity.length) activity.push("Task created");
+  row.dataset.activity = JSON.stringify(activity);
+  drawerActivityList.replaceChildren(...activity.map((message) => {
+    const item = document.createElement("p");
+    item.className = "drawer-activity-item";
+    item.textContent = message;
+    return item;
+  }));
+}
+
+function renderDrawerDependencies(row) {
+  const dependencies = getDrawerItems(row, "dependencies", "dependency");
+  if (!dependencies.length) {
+    drawerDependencyList.innerHTML = '<p class="drawer-empty">No dependencies recorded.</p>';
+    return;
+  }
+
+  drawerDependencyList.replaceChildren(...dependencies.map((dependency) => {
+    const item = document.createElement("div");
+    item.className = "drawer-item-chip";
+    const text = document.createElement("span");
+    text.textContent = dependency;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Remove dependency ${dependency}`);
+    remove.dataset.removeDependency = dependency;
+    remove.textContent = "×";
+    item.append(text, remove);
+    return item;
+  }));
+}
+
+function renderDrawerAttachments(row) {
+  const attachments = getDrawerItems(row, "attachments", "");
+  if (!attachments.length) {
+    drawerAttachmentList.innerHTML = '<p class="drawer-empty">No attachments.</p>';
+    return;
+  }
+
+  drawerAttachmentList.replaceChildren(...attachments.map((attachment, index) => {
+    const item = document.createElement("div");
+    item.className = "drawer-item-chip";
+    const text = document.createElement("span");
+    text.textContent = attachment;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Remove attachment ${attachment}`);
+    remove.dataset.removeAttachment = String(index);
+    remove.textContent = "×";
+    item.append(text, remove);
+    return item;
+  }));
+}
+
+drawerStatus.addEventListener("click", (event) => {
+  const option = event.target.closest(".drawer-select-option");
+  if (!option) return;
+  setDrawerSelect(drawerStatus, option.dataset.value);
+  drawerStatus.open = false;
+});
+
+drawerPriority.addEventListener("click", (event) => {
+  const option = event.target.closest(".drawer-select-option");
+  if (!option) return;
+  setDrawerSelect(drawerPriority, option.dataset.value);
+  drawerPriority.open = false;
+});
+
+document.querySelectorAll(".drawer-custom-select").forEach((dropdown) => {
+  dropdown.addEventListener("toggle", () => {
+    if (dropdown.open) {
+      document.querySelectorAll(".drawer-custom-select").forEach((otherDropdown) => {
+        if (otherDropdown !== dropdown) otherDropdown.open = false;
+      });
+    }
+  });
+});
+
+function updateTaskDueLabel(row, dateValue) {
+  const status = row.querySelector("td:nth-child(5) .status");
+  if (!dateValue) {
+    status.textContent = "Not set";
+    status.className = "status due-date";
+    return;
+  }
+
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const dueDate = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const difference = Math.round((dueDate - today) / 86400000);
+  status.textContent = difference < 0
+    ? "Overdue"
+    : difference === 0
+      ? "Due Today"
+      : difference === 1
+        ? "Due Tomorrow"
+        : `Due ${new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(dueDate)}`;
+  status.className = `status ${difference < 0 ? "overdue" : difference === 0 ? "due-today" : difference === 1 ? "due-tomorrow" : "due-date"}`;
+}
+
+document.addEventListener("click", (e) => {
+  // Click a task row (but not its checkbox or buttons)
+  const row = e.target.closest(".table-scroll tbody tr");
+  if (row && !e.target.closest(".custom-checkbox, button")) {
+    const cells = row.querySelectorAll("td");
+    const id = cells[1].textContent.trim();
+    const title = row.querySelector("strong").textContent;
+    const project = cells[5].textContent.trim();
+    const assignedBy = cells[6].textContent.trim();
+    const checkbox = row.querySelector('.task-checkbox');
+    activeTaskRow = row;
+
+    document.getElementById("drawer-meta").textContent = `${id} · ${project} · Assigned by ${assignedBy}`;
+    document.getElementById("drawer-title").textContent = title;
+    document.getElementById("drawer-description").textContent = row.dataset.description || "No description provided.";
+    setDrawerSelect(drawerStatus, row.dataset.taskStatus || (checkbox.checked ? "Completed" : "In Progress"));
+    setDrawerSelect(drawerPriority, row.dataset.priority || cells[3].textContent.trim() || "Medium");
+    drawerDueDate.value = row.dataset.targetDate || "";
+    drawerDiscipline.value = row.dataset.discipline || cells[2].querySelector(".row-subtitle")?.textContent.trim() || "General";
+    renderDrawerDependencies(row);
+    renderDrawerAttachments(row);
+    renderDrawerActivity(row);
+    drawerDependencyForm.hidden = true;
+    drawerDependencyForm.reset();
+    renderDrawerComments();
+    drawerBackdrop.hidden = false;
+    return;
+  }
+
+  if (e.target.closest("[data-close-drawer]") || e.target === drawerBackdrop) closeDrawer();
+});
+
+drawerCommentForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = document.getElementById("drawer-comment-input");
+  const comment = input.value.trim();
+  if (!comment || !activeTaskRow) return;
+
+  const comments = JSON.parse(activeTaskRow.dataset.comments || "[]");
+  comments.push(comment);
+  activeTaskRow.dataset.comments = JSON.stringify(comments);
+  addTaskActivity(activeTaskRow, `Comment added: ${comment}`);
+  input.value = "";
+  renderDrawerComments();
+});
+
+document.querySelector("[data-add-dependency]").addEventListener("click", () => {
+  drawerDependencyForm.hidden = false;
+  document.getElementById("drawer-dependency-input").focus();
+});
+
+document.querySelector("[data-cancel-dependency]").addEventListener("click", () => {
+  drawerDependencyForm.reset();
+  drawerDependencyForm.hidden = true;
+});
+
+drawerDependencyForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = document.getElementById("drawer-dependency-input");
+  const dependency = input.value.trim();
+  if (!dependency || !activeTaskRow) return;
+
+  const dependencies = getDrawerItems(activeTaskRow, "dependencies", "dependency");
+  dependencies.push(dependency);
+  activeTaskRow.dataset.dependencies = JSON.stringify(dependencies);
+  delete activeTaskRow.dataset.dependency;
+  renderDrawerDependencies(activeTaskRow);
+  addTaskActivity(activeTaskRow, `Dependency added: ${dependency}`);
+  drawerDependencyForm.reset();
+  drawerDependencyForm.hidden = true;
+});
+
+document.querySelector("[data-add-attachment]").addEventListener("click", () => drawerAttachmentInput.click());
+
+drawerAttachmentInput.addEventListener("change", () => {
+  if (!activeTaskRow) return;
+  const attachments = getDrawerItems(activeTaskRow, "attachments", "");
+  const addedAttachments = Array.from(drawerAttachmentInput.files, (file) => file.name);
+  activeTaskRow.dataset.attachments = JSON.stringify([...attachments, ...addedAttachments]);
+  renderDrawerAttachments(activeTaskRow);
+  addedAttachments.forEach((name) => addTaskActivity(activeTaskRow, `Attachment added: ${name}`));
+  drawerAttachmentInput.value = "";
+});
+
+document.addEventListener("click", (event) => {
+  const dependencyButton = event.target.closest("[data-remove-dependency]");
+  if (dependencyButton && activeTaskRow) {
+    const dependency = dependencyButton.dataset.removeDependency;
+    const dependencies = getDrawerItems(activeTaskRow, "dependencies", "dependency").filter((item) => item !== dependency);
+    activeTaskRow.dataset.dependencies = JSON.stringify(dependencies);
+    delete activeTaskRow.dataset.dependency;
+    renderDrawerDependencies(activeTaskRow);
+    addTaskActivity(activeTaskRow, `Dependency removed: ${dependency}`);
+  }
+
+  const attachmentButton = event.target.closest("[data-remove-attachment]");
+  if (attachmentButton && activeTaskRow) {
+    const index = Number(attachmentButton.dataset.removeAttachment);
+    const attachments = getDrawerItems(activeTaskRow, "attachments", "");
+    const [removedAttachment] = attachments.splice(index, 1);
+    activeTaskRow.dataset.attachments = JSON.stringify(attachments);
+    renderDrawerAttachments(activeTaskRow);
+    if (removedAttachment) addTaskActivity(activeTaskRow, `Attachment removed: ${removedAttachment}`);
+  }
+});
+
+document.querySelector(".drawer-save").addEventListener("click", () => {
+  if (!activeTaskRow) return;
+
+  const checkbox = activeTaskRow.querySelector(".task-checkbox");
+  const priorityBadge = activeTaskRow.querySelector("td:nth-child(4) .badge");
+  const discipline = activeTaskRow.querySelector("td:nth-child(3) .row-subtitle");
+  const previousStatus = activeTaskRow.dataset.taskStatus || (checkbox.checked ? "Completed" : "In Progress");
+  const previousPriority = activeTaskRow.dataset.priority || priorityBadge.textContent.trim();
+  const previousDate = activeTaskRow.dataset.targetDate || "";
+  const previousDiscipline = activeTaskRow.dataset.discipline || discipline?.textContent.trim() || "General";
+  const changes = [];
+
+  if (previousStatus !== drawerStatus.dataset.value) changes.push(`Status changed to ${drawerStatus.dataset.value}`);
+  if (previousPriority !== drawerPriority.dataset.value) changes.push(`Priority changed to ${drawerPriority.dataset.value}`);
+  if (previousDate !== drawerDueDate.value) changes.push(drawerDueDate.value ? `Target date set to ${drawerDueDate.value}` : "Target date cleared");
+  if (previousDiscipline !== drawerDiscipline.value) changes.push(`Discipline changed to ${drawerDiscipline.value}`);
+
+  activeTaskRow.dataset.taskStatus = drawerStatus.dataset.value;
+  activeTaskRow.dataset.priority = drawerPriority.dataset.value;
+  activeTaskRow.dataset.targetDate = drawerDueDate.value;
+  activeTaskRow.dataset.discipline = drawerDiscipline.value;
+  checkbox.checked = drawerStatus.dataset.value === "Completed";
+  activeTaskRow.classList.toggle("done", checkbox.checked);
+  priorityBadge.className = `badge ${drawerPriority.dataset.value.toLocaleLowerCase()}`;
+  priorityBadge.textContent = drawerPriority.dataset.value;
+  if (discipline) discipline.textContent = drawerDiscipline.value;
+  updateTaskDueLabel(activeTaskRow, drawerDueDate.value);
+  if (changes.length) addTaskActivity(activeTaskRow, changes.join(" · "));
+  updateTaskCount();
+  closeDrawer();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !drawerBackdrop.hidden) closeDrawer();
+});
