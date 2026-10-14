@@ -802,3 +802,82 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") railCalendar.hidden = true;
 });
+
+/* MEETINGS SECTION */
+const inMinutes = (min) => new Date(Date.now() + min * 60000);
+
+const meetings = [
+  { start: inMinutes(12),  end: inMinutes(102), title: "Elanor Coordination Meeting", type: "online",    place: "Teams link",            project: "Lodha Belmondo", attendees: 5, status: "join" },
+  { start: inMinutes(150), end: inMinutes(210), title: "MEP Design Review",           type: "in-person", place: "Belle, 36th Floor, OLP", project: "Lodha One",      attendees: 8, status: "join" },
+  { start: inMinutes(300), end: inMinutes(360), title: "Fire Strategy Call",          type: "online",    place: "Teams link",            project: "Palava",         attendees: 12, status: "going" }
+];
+
+const formatTime = (d) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+function getChip(m) {
+  const mins = Math.round((m.start - Date.now()) / 60000);
+  if (mins <= 0) return { text: "Live now", cls: "live" };
+  if (mins < 60) return { text: `In ${mins} min`, cls: "soon" };
+  return { text: `In ${Math.floor(mins / 60)} h`, cls: "" };
+}
+
+function createMeetingCard(m) {
+  const chip = getChip(m);
+  const attendees = m.attendees
+    ? `<span class="meeting-attendees">
+         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 10 9" fill="none">
+  <path d="M7.08366 8V7.16667C7.08366 6.72464 6.90806 6.30072 6.5955 5.98816C6.28294 5.67559 5.85902 5.5 5.41699 5.5H2.08366C1.64163 5.5 1.21771 5.67559 0.905148 5.98816C0.592587 6.30072 0.416992 6.72464 0.416992 7.16667V8M9.58366 8V7.16667C9.58338 6.79739 9.46047 6.43865 9.23423 6.1468C9.00798 5.85494 8.69121 5.64649 8.33366 5.55417M6.66699 0.554167C7.0255 0.645959 7.34326 0.854459 7.57017 1.1468C7.79709 1.43913 7.92026 1.79868 7.92026 2.16875C7.92026 2.53882 7.79709 2.89837 7.57017 3.1907C7.34326 3.48304 7.0255 3.69154 6.66699 3.78333M5.41699 2.16667C5.41699 3.08714 4.6708 3.83333 3.75033 3.83333C2.82985 3.83333 2.08366 3.08714 2.08366 2.16667C2.08366 1.24619 2.82985 0.5 3.75033 0.5C4.6708 0.5 5.41699 1.24619 5.41699 2.16667Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="0.7"/>
+</svg>
+         ${m.attendees}
+       </span>`
+    : "";
+
+  return `
+    <article class="meeting-card" tabindex="0">
+      <div class="meeting-status-row">
+        <span class="meeting-status ${chip.cls}"><i></i>${chip.text}</span>
+        ${attendees}
+      </div>
+
+      <div class="meeting-body">
+        <div class="meeting-time">
+          <strong>${formatTime(m.start)}</strong>
+          <span>${formatTime(m.end)}</span>
+        </div>
+
+        <div class="meeting-info">
+          <strong class="meeting-title">${m.title}</strong>
+          <span class="meeting-place">${m.place}</span>
+          <div class="meeting-tools">
+            <button class="meeting-tool" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              Notes
+            </button>
+            <button class="meeting-tool" type="button">MOM Tracker</button>
+          </div>
+        </div>
+
+        <div class="meeting-side">
+          <button class="meeting-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+            Join
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderSchedule() {
+  const upcoming = meetings
+    .filter((m) => m.end > Date.now())
+    .sort((a, b) => a.start - b.start);
+
+  document.getElementById("schedule-list").innerHTML = upcoming.length
+    ? upcoming.map(createMeetingCard).join("")
+    : `<p class="schedule-empty">No upcoming meetings</p>`;
+}
+
+renderSchedule();
+setInterval(renderSchedule, 60000);
+
