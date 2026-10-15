@@ -480,13 +480,11 @@ projectForm.addEventListener('submit', (event) => {
   }
 
   if (!projectForm.reportValidity()) return;
-    if (!projectForm.reportValidity()) return;
 
   createProjectCard(new FormData(projectForm));
 
   closeProjectDialog();
 
-  closeProjectDialog();
   projectForm.reset();
   customSelects.forEach((dropdown) => {
     dropdown.open = false;
@@ -645,6 +643,8 @@ document.querySelectorAll("[data-project-card]").forEach(addWorkspaceLink);
 
 /* OPEN PROJECT OVERVIEW PAGE */
 const overviewPage = document.getElementById("overview-page");
+const projectHeader = overviewPage.querySelector(".project-header");
+const projectHeaderCard = overviewPage.querySelector(".project-header-card");
 const projectOverviewContent = document.getElementById("project-overview-content");
 const projectTasksView = document.getElementById("project-tasks-view");
 const projectTaskList = document.getElementById("project-task-list");
@@ -654,6 +654,8 @@ let projectTaskPriorityFilter = "all";
 
 function setProjectView(viewName) {
   const showTasks = viewName === "tasks";
+  projectHeader.hidden = showTasks;
+  projectHeaderCard.hidden = showTasks;
   projectOverviewContent.hidden = showTasks;
   projectTasksView.hidden = !showTasks;
   document.querySelectorAll("[data-project-view]").forEach((tab) => {
@@ -834,22 +836,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") taskBackdrop.hidden = true;
 });
 
-/* MORE MENU */
-const moreBtn = document.querySelector(".more-btn");
-const menuCard = document.querySelector(".menu-card");
-
-moreBtn.addEventListener("click", () => {
-  menuCard.hidden = !menuCard.hidden;
-  moreBtn.setAttribute("aria-expanded", String(!menuCard.hidden));
-});
-
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".more-menu")) menuCard.hidden = true;
-});
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") menuCard.hidden = true;
-});
 
 //TOWER FILTER BUTTON
 const towerBtn = document.querySelector(".tower-filter");
@@ -1360,9 +1346,11 @@ function updateTaskDueLabel(row, dateValue) {
 }
 
 document.addEventListener("click", (e) => {
-  // Click a task row (but not its checkbox or buttons)
   const row = e.target.closest(".table-scroll tbody tr, .project-task-table tbody tr");
-  if (row && !e.target.closest(".custom-checkbox, button")) {
+  const commentBtn = e.target.closest(".comment-btn");
+
+  // Row click opens the drawer. The Comment button opens it too.
+  if (row && (commentBtn || !e.target.closest(".custom-checkbox, button"))) { 
     const cells = row.querySelectorAll("td");
     const id = cells[1].textContent.trim();
     const title = row.querySelector("strong").textContent;
@@ -1384,7 +1372,13 @@ document.addEventListener("click", (e) => {
     drawerDependencyForm.hidden = true;
     drawerDependencyForm.reset();
     renderDrawerComments();
-    drawerBackdrop.hidden = false;
+        drawerBackdrop.hidden = false;
+
+    if (commentBtn) {
+      const commentInput = document.getElementById("drawer-comment-input");
+      commentInput.scrollIntoView({ block: "center" });
+      commentInput.focus();
+    }
     return;
   }
 
@@ -1507,3 +1501,56 @@ document.querySelector(".drawer-save").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !drawerBackdrop.hidden) closeDrawer();
 });
+
+/* PROFILE MENU */
+const userTrigger = document.querySelector(".user");
+const profileCard = document.getElementById("profile-card");
+document.querySelector(".user-menu").append(profileCard);
+
+function setProfileOpen(open) {
+  profileCard.hidden = !open;
+  userTrigger.setAttribute("aria-expanded", String(open));
+}
+
+userTrigger.addEventListener("click", () => setProfileOpen(profileCard.hidden));
+
+userTrigger.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    setProfileOpen(profileCard.hidden);
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".user-menu")) setProfileOpen(false);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") setProfileOpen(false);
+});
+
+document.querySelectorAll(".theme-option").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".theme-option").forEach((b) =>
+      b.classList.toggle("active", b === btn)
+    );
+  });
+});
+
+/* DELIVERABLES */
+const deliverableChecks = Array.from(document.querySelectorAll("#deliverables-table input[type='checkbox']"));
+const deliverablesCount = document.querySelector("#dashboard-deliverables-panel .panel-count");
+
+function updateDeliverablesCount() {
+  const done = deliverableChecks.filter((c) => c.checked).length;
+  deliverablesCount.textContent = `${done}/${deliverableChecks.length}`;
+}
+
+deliverableChecks.forEach((c) => {
+  c.addEventListener("change", () => {
+    c.closest("tr").classList.toggle("done", c.checked);
+    updateDeliverablesCount();
+  });
+});
+
+updateDeliverablesCount();
