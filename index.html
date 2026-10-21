@@ -64,7 +64,7 @@ Projects
 Library
 </a>
 
-  <a href="#">
+  <a href="#reporting" data-view-target="reporting">
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <path d="M4.16602 17.5V12.5M10 17.5V7.5M15.834 17.5V2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 </svg>
@@ -74,7 +74,7 @@ Reporting
 </nav>
 
 <!--Logout button-->
-<a href="#" class="logout">
+<a href="#" class="logout" data-action="logout">
     <svg 
     xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <path d="M7.50065 17.5H4.16732C3.70708 17.5 3.33398 17.1269 3.33398 16.6667V3.33333C3.33398 2.8731 3.70708 2.5 4.16732 2.5H7.50065" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -131,18 +131,30 @@ Logout
   </section>
 </div>
 
-<button class="icon-btn" aria-label="AI assistant">
+<button class="icon-btn" type="button" aria-label="AI assistant" data-open-assistant>
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
   <path d="M15.016 5.954C14.5274 6.17952 14.0202 6.3622 13.5 6.5C14.0207 6.63663 14.528 6.8197 15.016 7.047C15.927 7.485 16.51 8.061 16.953 8.979C17.16 9.405 17.335 9.906 17.5 10.5C17.6363 9.97762 17.8194 9.46857 18.047 8.979C18.49 8.062 19.073 7.485 19.984 7.047C20.4726 6.82114 20.9798 6.63812 21.5 6.5C20.909 6.334 20.41 6.159 19.984 5.954C19.073 5.516 18.49 4.939 18.047 4.021C17.84 3.595 17.665 3.095 17.5 2.5C17.335 3.094 17.16 3.594 16.953 4.022C16.51 4.939 15.927 5.516 15.016 5.954Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M4.152 13.968C3.6089 14.168 3.05776 14.3455 2.5 14.5C3.05776 14.6545 3.6089 14.832 4.152 15.032C6.693 15.985 8.005 17.27 8.968 19.838C9.16943 20.384 9.34693 20.9385 9.5 21.5C9.65307 20.9385 9.83057 20.384 10.032 19.838C10.994 17.27 12.306 15.985 14.848 15.032C15.3911 14.832 15.9422 14.6545 16.5 14.5C15.8987 14.332 15.348 14.1547 14.848 13.968C12.307 13.015 10.995 11.729 10.032 9.162C9.83057 8.616 9.65307 8.06148 9.5 7.5C9.34693 8.06148 9.16943 8.616 8.968 9.162C8.005 11.73 6.694 13.015 4.152 13.968Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 </button>
 
-<button class="icon-btn" aria-label="Notifications">
+<div class="mail-menu notif-menu">
+<button class="icon-btn notif-trigger" type="button" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
   <path d="M13.73 21C13.5542 21.3031 13.3018 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
+  <span class="notif-badge" id="notif-badge" aria-hidden="true"></span>
 </button>
+
+  <section class="mail-overlay notif-overlay" id="notif-overlay" aria-label="Notifications" hidden>
+    <header class="mail-overlay-top">
+      <span class="mail-eyebrow">Notifications</span>
+      <button class="mail-inbox-link notif-mark-read" type="button" id="notif-mark-read">Mark all as read</button>
+    </header>
+    <h2 class="mail-overlay-title" id="notif-title">Recent updates</h2>
+    <ul class="mail-list" id="notif-list"></ul>
+  </section>
+</div>
 </div>
 
 <div class="user-menu">
@@ -179,7 +191,7 @@ Logout
     </div>
 
     <button 
-    class="profile-item" type="button">
+    class="profile-item" type="button" data-route="profile/account">
       <svg 
       width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
       </svg>
@@ -191,7 +203,7 @@ Logout
     </button>
 
     <button 
-    class="profile-item" type="button">
+    class="profile-item" type="button" data-route="profile/notifications">
       <svg 
       width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
     </svg>
@@ -222,14 +234,14 @@ Logout
       </div>
     </div>
 
-    <button class="profile-item" type="button">
+    <button class="profile-item" type="button" data-route="profile/help">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
       Help &amp; Support
       <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
     <div class="profile-logout-wrap">
-      <button class="profile-logout" type="button">
+      <button class="profile-logout" type="button" data-action="logout">
         <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M7.5 17.5H4.17a.83.83 0 0 1-.84-.83V3.33a.83.83 0 0 1 .84-.83H7.5M13.33 14.17 17.5 10l-4.17-4.17M17.5 10h-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Log Out
       </button>
@@ -616,7 +628,7 @@ Logout
           <div class="form-field">
             <label for="task-attachment">Attachment</label>
             <label class="task-upload" for="task-attachment">
-              <span class="task-upload-text">Upload Files</span>
+              <span class="task-upload-text" data-default-label="Upload Files">Upload Files</span>
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 13V3m0 0L6 7m4-4l4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -669,10 +681,11 @@ Logout
         <div class="form-field">
           <span class="notes-label">Generate Via</span>
           <div class="notes-generate">
-            <button class="notes-option" type="button">
+            <button class="notes-option" type="button" data-pick-recording>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 6v12M12 3v18M16 8v8M20 11v2"/></svg>
-              Existing Recording
+              <span class="notes-option-label">Existing Recording</span>
             </button>
+            <input class="visually-hidden" id="notes-recording" type="file" accept="audio/*,video/*" tabindex="-1" aria-hidden="true">
             <label class="notes-upload" for="notes-file">
               <span><strong>Upload Files</strong><small>Pdf, Word, JPG, PNG, Excel</small></span>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 13V3m0 0L6 7m4-4l4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -685,7 +698,7 @@ Logout
           <label for="notes-text">Minutes / points discussed</label>
           <textarea id="notes-text" placeholder="Decisions, action items, who owns what, follow-up date..."></textarea>
           <div class="notes-ai-row">
-            <button class="notes-ai-btn" type="button">
+            <button class="notes-ai-btn" type="button" data-summarize-notes>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 7.5c.9 4.4 2.3 5.8 6.7 6.7-4.4.9-5.8 2.3-6.7 6.7-.9-4.4-2.3-5.8-6.7-6.7 4.4-.9 5.8-2.3 6.7-6.7ZM18 3v4M16 5h4"/></svg>
               Summarize with AI
             </button>
@@ -720,9 +733,16 @@ Logout
 
     <header class="drawer-header">
   <h2>Task Details</h2>
-  <button class="drawer-more-btn" type="button" aria-label="More options">
+  <div class="drawer-more-wrap">
+  <button class="drawer-more-btn" type="button" aria-label="More options" aria-haspopup="menu" aria-expanded="false" aria-controls="drawer-more-menu">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="3" cy="8" r="1.25" fill="currentColor"/><circle cx="8" cy="8" r="1.25" fill="currentColor"/><circle cx="13" cy="8" r="1.25" fill="currentColor"/></svg>
   </button>
+    <div class="role-switch-menu drawer-more-menu" id="drawer-more-menu" role="menu" aria-label="Task options" hidden>
+      <button type="button" role="menuitem" data-drawer-action="copy">Copy task ID</button>
+      <button type="button" role="menuitem" data-drawer-action="duplicate">Duplicate task</button>
+      <button type="button" role="menuitem" data-drawer-action="delete">Delete task</button>
+    </div>
+  </div>
   <button class="drawer-close" type="button" aria-label="Close" data-close-drawer>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
   </button>
@@ -796,6 +816,56 @@ Logout
       <button class="task-discard" type="button" data-close-drawer>Discard</button>
     </footer>
 
+  </aside>
+</div>
+
+<!-- Shared dialog for Remind / Respond / Add Deliverable / Transmittal / Add Member / Schedule Meeting / previews -->
+<div class="dialog-backdrop" id="action-dialog-backdrop" hidden>
+  <section class="task-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="action-dialog-title">
+    <header class="task-dialog-header">
+      <div>
+        <h2 id="action-dialog-title"></h2>
+        <p class="action-dialog-subtitle" id="action-dialog-subtitle"></p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Close" data-close-action-dialog>&times;</button>
+    </header>
+    <form class="task-form" id="action-form" novalidate>
+      <div class="task-form-fields" id="action-form-fields"></div>
+      <footer class="task-dialog-footer">
+        <button class="submit-project-btn task-submit" type="submit" id="action-submit"></button>
+        <button class="task-discard" type="button" data-close-action-dialog id="action-cancel">Cancel</button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<!-- AI assistant drawer -->
+<div class="drawer-backdrop" id="assistant-backdrop" hidden>
+  <aside class="task-drawer assistant-drawer" role="dialog" aria-modal="true" aria-labelledby="assistant-title">
+    <header class="drawer-header">
+      <h2 id="assistant-title">Atelier Assistant</h2>
+      <button class="drawer-close" type="button" aria-label="Close" data-close-assistant>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="drawer-body assistant-body">
+      <div class="assistant-messages" id="assistant-messages" aria-live="polite"></div>
+      <div class="assistant-suggestions" id="assistant-suggestions">
+        <button class="task-priority-filter" type="button" data-assistant-prompt="What's overdue?">What's overdue?</button>
+        <button class="task-priority-filter" type="button" data-assistant-prompt="Summarise my day">Summarise my day</button>
+        <button class="task-priority-filter" type="button" data-assistant-prompt="Which RFIs are blocking?">Which RFIs are blocking?</button>
+        <button class="task-priority-filter" type="button" data-assistant-prompt="When is my next meeting?">When is my next meeting?</button>
+      </div>
+    </div>
+    <footer class="drawer-footer assistant-footer">
+      <form class="drawer-comment-form" id="assistant-form">
+        <input id="assistant-input" type="text" placeholder="Ask about tasks, RFIs, deliverables, meetings..." aria-label="Ask the assistant" autocomplete="off">
+        <button type="submit" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <p class="assistant-note">Answers come from the data on this page.</p>
+    </footer>
   </aside>
 </div>
 
@@ -873,7 +943,7 @@ Logout
     </div>
   </a>
 
-  <div class="kpi-card">
+  <div class="kpi-card" data-open-items="tasks" data-open-filter="overdue" tabindex="0" role="link" aria-label="Open delayed items">
     <div class="kpi-top">
       <div class="kpi-icon alert">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -920,7 +990,7 @@ Logout
     </div>
   </div>
 
-  <div class="kpi-card">
+  <div class="kpi-card" data-open-items="rfis" tabindex="0" role="link" aria-label="Open items awaiting others">
     <div class="kpi-top">
       <div class="kpi-icon doc">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -935,7 +1005,7 @@ Logout
     </div>
     <strong>06</strong>
     <div class="kpi-bottom">
-      <span>Open RFIs</span>
+      <span>Awaiting Others</span>
       <span class="kpi-tag negative">1 blocking</span>
     </div>
   </div>
@@ -998,13 +1068,13 @@ Logout
       <td><span class="task-state pending">Pending</span></td>
       <td><span class="status due-date">Wed, Sept 05</span></td>
       <td>Apurva Bhadange</td>
-      <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
+      <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
     </tr>
   </tbody>
 </table>
 </div>
 
-<a href="#" class="view-all">View All Tasks <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+<a href="#open-items/tasks" class="view-all" data-route="open-items/tasks">View All Tasks <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
   <path d="M5.33398 10.6666L10.6673 5.33331M10.6673 9.33331V5.33331H6.66732" stroke="#644235" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></a>
 </section>
@@ -1015,9 +1085,7 @@ Logout
   <nav class="breadcrumbs" aria-label="Breadcrumb">
     <a href="#dashboard" data-view-target="dashboard">Dashboard</a>
     <span aria-hidden="true">›</span>
-    <a href="#projects" data-view-target="projects">Projects</a>
-    <span aria-hidden="true">›</span>
-    <span aria-current="page">Lodha Belmondo</span>
+    <a href="#projects" data-view-target="projects" aria-current="page">Projects</a>
   </nav>
 
   <div class="project-toolbar">
@@ -1093,14 +1161,14 @@ Logout
 
 <section class="library-view" id="library-view" hidden>
   <nav class="library-tabs" aria-label="Library sections">
-    <button class="library-tab active" type="button" aria-current="page">Policies</button>
-    <button class="library-tab" type="button" disabled>Learnings</button>
-    <button class="library-tab" type="button" disabled>BOQs</button>
-    <button class="library-tab" type="button" disabled>Approved Makes</button>
-    <button class="library-tab" type="button" disabled>MAS Library</button>
-    <button class="library-tab" type="button" disabled>Standard Drawings</button>
-    <button class="library-tab" type="button" disabled>Reference Books</button>
-    <button class="library-tab" type="button" disabled>Catalogues</button>
+    <button class="library-tab active" type="button" aria-current="page" data-library-tab="policies">Policies</button>
+    <button class="library-tab" type="button" data-library-tab="learnings">Learnings</button>
+    <button class="library-tab" type="button" data-library-tab="boqs">BOQs</button>
+    <button class="library-tab" type="button" data-library-tab="makes">Approved Makes</button>
+    <button class="library-tab" type="button" data-library-tab="mas">MAS Library</button>
+    <button class="library-tab" type="button" data-library-tab="drawings">Standard Drawings</button>
+    <button class="library-tab" type="button" data-library-tab="books">Reference Books</button>
+    <button class="library-tab" type="button" data-library-tab="catalogues">Catalogues</button>
   </nav>
 
   <section class="policy-browser" aria-label="Policies">
@@ -1138,7 +1206,7 @@ Logout
       <table class="policy-table">
         <thead>
           <tr>
-            <th scope="col">Policy No.</th>
+            <th scope="col" id="library-ref-heading">Policy No.</th>
             <th scope="col">Document Name</th>
             <th scope="col">Version</th>
             <th scope="col">Last Updated</th>
@@ -1190,19 +1258,19 @@ Logout
 </button>
 
 <div class="menu-card-project">
-    <button class="menu-options" type="button">
+    <button class="menu-options" type="button" data-project-action="add-deliverable">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
       Add Deliverable
     </button>
-    <button class="menu-options" type="button">
+    <button class="menu-options" type="button" data-project-action="transmittal">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
       Create Transmittal
     </button>
-    <button class="menu-options" type="button">
+    <button class="menu-options" type="button" data-project-action="add-member">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
       Add Member
     </button>
-    <button class="menu-options" type="button">
+    <button class="menu-options" type="button" data-project-action="schedule-meeting">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       Schedule Meeting
     </button>
@@ -1290,7 +1358,7 @@ Logout
   </defs>
 </svg>
       </span>
-      <div><strong>2</strong> Transmittal<small class="warn">1 pending</small></div>
+      <div><strong id="metric-transmittals">2</strong> Transmittal<small class="warn"><span id="metric-transmittals-pending">1</span> pending</small></div>
     </div>
 
     <!-- Meetings Metric -->
@@ -1307,7 +1375,7 @@ Logout
   </defs>
 </svg>
       </span>
-      <div><strong>3</strong> Meetings Today</div>
+      <div><strong id="metric-meetings">3</strong> Meetings Today</div>
     </div>
 
     <!-- Team Members Metric -->
@@ -1324,7 +1392,7 @@ Logout
   </defs>
 </svg>
       </span>
-      <div><strong>12</strong> Team Members<small>2 firms</small></div>
+      <div><strong id="metric-team">12</strong> Team Members<small><span id="metric-firms">2</span> firms</small></div>
     </div>
   </div>
 </section>
@@ -1351,7 +1419,7 @@ Logout
       Overview</button>
 
       <!-- Deliverables Button -->
-    <button class="project-nav-tab" type="button">
+    <button class="project-nav-tab" type="button" data-project-view="deliverables">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
   <g clip-path="url(#clip0_958_4143)">
     <path d="M8.00033 14L2.66699 11V5L8.00033 2L13.3337 5V8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
@@ -1400,7 +1468,7 @@ Logout
       RFIs</button>
 
     <!-- Files Button -->
-    <button class="project-nav-tab" type="button">
+    <button class="project-nav-tab" type="button" data-project-view="files">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
   <g clip-path="url(#clip0_958_4183)">
     <path d="M6.00033 2H8.00033L9.33366 3.33333H12.667C13.0206 3.33333 13.3598 3.47381 13.6098 3.72386C13.8598 3.97391 14.0003 4.31304 14.0003 4.66667V9.33333C14.0003 9.68696 13.8598 10.0261 13.6098 10.2761C13.3598 10.5262 13.0206 10.6667 12.667 10.6667H6.00033C5.6467 10.6667 5.30756 10.5262 5.05752 10.2761C4.80747 10.0261 4.66699 9.68696 4.66699 9.33333V3.33333C4.66699 2.97971 4.80747 2.64057 5.05752 2.39052C5.30756 2.14048 5.6467 2 6.00033 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
@@ -1415,7 +1483,7 @@ Logout
       Files</button>
 
       <!-- Team Button -->
-    <button class="project-nav-tab" type="button">
+    <button class="project-nav-tab" type="button" data-project-view="team">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
   <g clip-path="url(#clip0_958_4167)">
     <path d="M3.33301 4.66667C3.33301 5.37391 3.61396 6.05219 4.11406 6.55229C4.61415 7.05238 5.29243 7.33333 5.99967 7.33333C6.70692 7.33333 7.3852 7.05238 7.88529 6.55229C8.38539 6.05219 8.66634 5.37391 8.66634 4.66667C8.66634 3.95942 8.38539 3.28115 7.88529 2.78105C7.3852 2.28095 6.70692 2 5.99967 2C5.29243 2 4.61415 2.28095 4.11406 2.78105C3.61396 3.28115 3.33301 3.95942 3.33301 4.66667Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
@@ -1502,15 +1570,15 @@ Logout
           <span class="milestone-status">Upcoming</span>
         </li>
       </ol>
-      <a class="overview-panel-link" href="#milestones">View All Milestones <span aria-hidden="true">↗</span></a>
+      <a class="overview-panel-link" href="#project/milestones" data-project-link="milestones">View All Milestones <span aria-hidden="true">↗</span></a>
     </section>
 
     <section class="overview-panel activity-panel">
       <header class="overview-panel-header">
         <h2>Recent Activity</h2>
-        <a class="overview-panel-link-inline" href="#activity">View All Activity <span aria-hidden="true">↗</span></a>
+        <a class="overview-panel-link-inline" href="#project/activity" data-project-link="activity">View All Activity <span aria-hidden="true">↗</span></a>
       </header>
-      <ul class="activity-list">
+      <ul class="activity-list" id="overview-activity-list">
         <li class="activity-item">
           <span class="activity-avatar">SK</span>
           <span class="activity-copy"><strong>SK uploaded <b>Electrical lighting layout Rev C</b></strong><small><span aria-hidden="true">◷</span> 2 hours ago</small></span>
@@ -1545,42 +1613,13 @@ Logout
         </button>
         <input class="visually-hidden" id="overview-upload-input" type="file" multiple>
       </header>
-      <div class="upload-grid">
-        <article class="upload-card">
-          <header><span class="upload-file-icon is-pdf" aria-hidden="true">PDF</span><span class="upload-type">VFC</span></header>
-          <strong>Structural_L4_Slab_Reinforcement_v2.pdf</strong>
-          <p>Structure · Wing 26 · L4</p>
-          <small>14.2 MB · Uploaded by Apurva B. · Just Now</small>
-          <div class="upload-actions"><button type="button">Open</button><button type="button" class="upload-download"><span aria-hidden="true">⇩</span> Download</button></div>
-        </article>
-        <article class="upload-card">
-          <header><span class="upload-file-icon is-sheet" aria-hidden="true">XLS</span><span class="upload-type">DD</span></header>
-          <strong>HVAC_Equipment_Schedule_Datasheet_Chillers.xls</strong>
-          <p>Structure · Wing 26 · L4</p>
-          <small>14.2 MB · Uploaded by Apurva B. · 2 hrs ago</small>
-          <div class="upload-actions"><button type="button">Open</button><button type="button" class="upload-download"><span aria-hidden="true">⇩</span> Download</button></div>
-        </article>
-        <article class="upload-card">
-          <header><span class="upload-file-icon is-pdf" aria-hidden="true">PDF</span><span class="upload-type">DD</span></header>
-          <strong>Fire_Strategy_NOC_Approval_Letter.pdf</strong>
-          <p>Site Team · Wing 12</p>
-          <small>2.1 MB · Uploaded by Sanjay Rao · 1 day ago</small>
-          <div class="upload-actions"><button type="button">Open</button><button type="button" class="upload-download"><span aria-hidden="true">⇩</span> Download</button></div>
-        </article>
-        <article class="upload-card">
-          <header><span class="upload-file-icon is-drawing" aria-hidden="true">DWG</span><span class="upload-type">Tender</span></header>
-          <strong>Plumbing_Single_Line_Diagram_R3.dwg</strong>
-          <p>JV Consultant · Wing 25</p>
-          <small>28.5 MB · Uploaded by Rajesh K. · 2 hrs ago</small>
-          <div class="upload-actions"><button type="button">Open</button><button type="button" class="upload-download"><span aria-hidden="true">⇩</span> Download</button></div>
-        </article>
-      </div>
+      <div class="upload-grid" id="overview-upload-grid"></div>
     </section>
 
     <section class="overview-panel discipline-panel">
       <header class="overview-panel-header">
         <h2>Deliverables by discipline</h2>
-        <a class="overview-panel-link-inline" href="#deliverables">View Details <span aria-hidden="true">↗</span></a>
+        <a class="overview-panel-link-inline" href="#project/deliverables" data-project-link="deliverables">View Details <span aria-hidden="true">↗</span></a>
       </header>
       <div class="discipline-list">
         <div class="discipline-item">
@@ -1674,10 +1713,10 @@ Logout
 
         <tr class="project-task-group-row" data-group-header="in-review"><th colspan="8"><button class="task-group-toggle" type="button" data-toggle-task-group="in-review" aria-expanded="true"><span class="task-group-chevron" aria-hidden="true"></span><span>In Review</span><span class="task-group-count is-red" data-task-group-count="in-review">01</span></button></th></tr>
         <tr class="project-task-row" data-task-row data-group="in-review" data-task-status="In Review" data-priority="medium" data-target-date="2026-10-13">
-          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Approve Revised Typical Floor"><span class="checkbox-box"></span></label></td><td>T-12</td><td><strong>Approve Revised Typical Floor</strong><span class="row-subtitle">Firefighting <span class="waiting-tag">· Waiting on MEP Consultant</span></span></td><td><span class="badge medium">Medium</span></td><td><span class="status overdue">Overdue</span></td><td>Wing 25</td><td>Sachin Patil</td><td><button class="comment-btn project-task-action" type="button" data-open-task-details>Remind</button></td>
+          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Approve Revised Typical Floor"><span class="checkbox-box"></span></label></td><td>T-12</td><td><strong>Approve Revised Typical Floor</strong><span class="row-subtitle">Firefighting <span class="waiting-tag">· Waiting on MEP Consultant</span></span></td><td><span class="badge medium">Medium</span></td><td><span class="status overdue">Overdue</span></td><td>Wing 25</td><td>Sachin Patil</td><td><button class="comment-btn project-task-action" type="button" data-open-task-details data-row-action="remind">Remind</button></td>
         </tr>
         <tr class="project-task-row" data-task-row data-group="in-review" data-task-status="In Review" data-priority="medium" data-target-date="2026-10-13">
-          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Approve Revised Typical Floor"><span class="checkbox-box"></span></label></td><td>T-12</td><td><strong>Approve Revised Typical Floor</strong><span class="row-subtitle">Firefighting <span class="waiting-tag">· Waiting on MEP Consultant</span></span></td><td><span class="badge medium">Medium</span></td><td><span class="status overdue">Overdue</span></td><td>Wing 25</td><td>Sachin Patil</td><td><button class="comment-btn project-task-action" type="button" data-open-task-details>Remind</button></td>
+          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Approve Revised Typical Floor"><span class="checkbox-box"></span></label></td><td>T-12</td><td><strong>Approve Revised Typical Floor</strong><span class="row-subtitle">Firefighting <span class="waiting-tag">· Waiting on MEP Consultant</span></span></td><td><span class="badge medium">Medium</span></td><td><span class="status overdue">Overdue</span></td><td>Wing 25</td><td>Sachin Patil</td><td><button class="comment-btn project-task-action" type="button" data-open-task-details data-row-action="remind">Remind</button></td>
         </tr>
 
         <tr class="project-task-group-row" data-group-header="completed"><th colspan="8"><button class="task-group-toggle" type="button" data-toggle-task-group="completed" aria-expanded="true"><span class="task-group-chevron" aria-hidden="true"></span><span>Completed</span><span class="task-group-count is-green" data-task-group-count="completed">02</span></button></th></tr>
@@ -1747,13 +1786,369 @@ Logout
   <footer class="project-task-pagination">Page 1 of 1</footer>
 </section>
 
+<!-- Project Deliverables (built from data in app.js, same layout as Open Items) -->
+<section class="project-tasks-view" id="project-deliverables-view" hidden aria-label="Project deliverables"></section>
+
+<!-- Project Files -->
+<section class="project-tasks-view" id="project-files-view" hidden aria-label="Project files">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter files by type">
+      <button class="task-priority-filter is-active" type="button" data-file-type="all" aria-pressed="true">All</button>
+      <button class="task-priority-filter" type="button" data-file-type="pdf" aria-pressed="false">PDF</button>
+      <button class="task-priority-filter" type="button" data-file-type="sheet" aria-pressed="false">Spreadsheets</button>
+      <button class="task-priority-filter" type="button" data-file-type="drawing" aria-pressed="false">Drawings</button>
+      <button class="task-priority-filter" type="button" data-file-type="other" aria-pressed="false">Other</button>
+    </div>
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="project-file-search" type="search" aria-label="Search files" placeholder="Search files...">
+    </label>
+    <button class="project-task-add" type="button" data-overview-upload-trigger>
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 13V3m0 0L6 7m4-4 4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Upload File
+    </button>
+  </div>
+  <div class="upload-grid files-grid" id="project-files-grid"></div>
+  <p class="policy-empty" id="project-files-empty" hidden>No files match these filters.</p>
+</section>
+
+<!-- Project Team -->
+<section class="project-tasks-view" id="project-team-view" hidden aria-label="Project team">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter team by organisation">
+      <button class="task-priority-filter is-active" type="button" data-team-filter="all" aria-pressed="true">All</button>
+      <button class="task-priority-filter" type="button" data-team-filter="internal" aria-pressed="false">Internal</button>
+      <button class="task-priority-filter" type="button" data-team-filter="consultant" aria-pressed="false">Consultants</button>
+    </div>
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="project-team-search" type="search" aria-label="Search team members" placeholder="Search people...">
+    </label>
+    <button class="project-task-add" type="button" data-project-action="add-member"><span aria-hidden="true">+</span> Add Member</button>
+  </div>
+  <div class="team-grid" id="project-team-grid"></div>
+  <p class="policy-empty" id="project-team-empty" hidden>No team members match these filters.</p>
+</section>
+
+<!-- Project Milestones (View All Milestones) -->
+<section class="project-tasks-view" id="project-milestones-view" hidden aria-label="Project milestones">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter milestones">
+      <button class="task-priority-filter is-active" type="button" data-milestone-filter="all" aria-pressed="true">All</button>
+      <button class="task-priority-filter" type="button" data-milestone-filter="upcoming" aria-pressed="false">Upcoming</button>
+      <button class="task-priority-filter" type="button" data-milestone-filter="complete" aria-pressed="false">Completed</button>
+    </div>
+  </div>
+  <section class="overview-panel milestone-panel">
+    <header class="overview-panel-header">
+      <h2>All Milestones</h2>
+      <strong id="project-milestone-progress"></strong>
+    </header>
+    <ol class="milestone-list" id="project-milestone-list"></ol>
+  </section>
+</section>
+
+<!-- Project Activity (View All Activity) -->
+<section class="project-tasks-view" id="project-activity-view" hidden aria-label="Project activity">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter activity by location" id="project-activity-filters"></div>
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="project-activity-search" type="search" aria-label="Search activity" placeholder="Search activity...">
+    </label>
+  </div>
+  <section class="overview-panel activity-panel">
+    <header class="overview-panel-header"><h2>All Activity</h2></header>
+    <ul class="activity-list" id="project-activity-list"></ul>
+  </section>
+</section>
+
+</section>
+
+<!--REPORTING PAGE-->
+<section class="page-view reporting-view" id="reporting-view" hidden aria-labelledby="reporting-title">
+  <header class="page-heading">
+    <div>
+      <h1 id="reporting-title">Reporting</h1>
+      <p>Portfolio health across your assigned projects.</p>
+    </div>
+    <div class="page-heading-actions">
+      <label class="project-status-filter">
+        <span class="visually-hidden">Reporting period</span>
+        <select id="report-period">
+          <option value="30">Last 30 days</option>
+          <option value="90">Last quarter</option>
+          <option value="365">This year</option>
+        </select>
+      </label>
+      <button class="project-task-add" type="button" id="report-export">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <div class="kpi-row report-kpis" id="report-kpis"></div>
+
+  <div class="overview-dashboard report-grid">
+    <div class="overview-dashboard-column">
+      <section class="overview-panel">
+        <header class="overview-panel-header">
+          <h2>Project health</h2>
+          <a class="overview-panel-link-inline" href="#projects" data-view-target="projects">All projects <span aria-hidden="true">↗</span></a>
+        </header>
+        <div class="report-table-scroll">
+          <table class="policy-table report-table">
+            <thead><tr><th scope="col">Project</th><th scope="col">Progress</th><th scope="col">Tasks</th><th scope="col">RFIs</th><th scope="col">Delayed</th><th scope="col">Status</th></tr></thead>
+            <tbody id="report-project-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="overview-panel">
+        <header class="overview-panel-header">
+          <h2>Tasks closed per week</h2>
+          <strong id="report-throughput-total"></strong>
+        </header>
+        <div class="throughput-chart" id="report-throughput"></div>
+      </section>
+    </div>
+
+    <div class="overview-dashboard-column">
+      <section class="overview-panel">
+        <header class="overview-panel-header">
+          <h2>Item status</h2>
+          <strong id="report-status-total"></strong>
+        </header>
+        <div class="status-stack" id="report-status-stack"></div>
+        <div class="status-legend" id="report-status-legend"></div>
+      </section>
+
+      <section class="overview-panel discipline-panel">
+        <header class="overview-panel-header">
+          <h2>Deliverables by discipline</h2>
+          <strong id="report-discipline-total"></strong>
+        </header>
+        <div class="discipline-list" id="report-discipline-list"></div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!--PROFILE & SETTINGS PAGE-->
+<section class="page-view profile-view" id="profile-view" hidden aria-label="Account">
+  <nav class="library-tabs" aria-label="Account sections">
+    <button class="library-tab active" type="button" data-profile-tab="account" aria-current="page">Profile</button>
+    <button class="library-tab" type="button" data-profile-tab="notifications">Notification Preferences</button>
+    <button class="library-tab" type="button" data-profile-tab="help">Help &amp; Support</button>
+  </nav>
+
+  <section class="overview-panel profile-panel" data-profile-panel="account">
+    <div class="profile-hero">
+      <div class="profile-avatar" id="profile-page-avatar">AB</div>
+      <div>
+        <strong id="profile-page-name">Apurva Bhadange</strong>
+        <span class="profile-role" id="profile-page-role">MEP Design · Super Admin</span>
+        <span class="profile-email" id="profile-page-email">apurva.bhadange@lodhagroup.com</span>
+      </div>
+    </div>
+    <form class="profile-form" id="profile-form">
+      <div class="project-form-fields">
+        <div class="form-field">
+          <label for="profile-name">Full name <span>*</span></label>
+          <input id="profile-name" name="name" required autocomplete="name">
+        </div>
+        <div class="form-field">
+          <label for="profile-email">Work email <span>*</span></label>
+          <input id="profile-email" name="email" type="email" required autocomplete="email">
+        </div>
+        <div class="form-field">
+          <label for="profile-phone">Phone</label>
+          <input id="profile-phone" name="phone" type="tel" autocomplete="tel" placeholder="+91 98xxx xxxxx">
+        </div>
+        <div class="form-field">
+          <label for="profile-department">Department</label>
+          <select id="profile-department" name="department">
+            <option>MEP Design</option>
+            <option>Project Management</option>
+            <option>Design Coordination</option>
+            <option>Site Execution</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="profile-location">Base location</label>
+          <select id="profile-location" name="location">
+            <option>South Mumbai</option>
+            <option>Thane</option>
+            <option>Palava</option>
+            <option>Pune</option>
+            <option>Bangalore</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="profile-manager">Reports to</label>
+          <input id="profile-manager" name="manager" placeholder="e.g. Priya Shah">
+        </div>
+        <div class="form-field form-field-wide">
+          <label for="profile-bio">About</label>
+          <textarea id="profile-bio" name="bio" maxlength="300" placeholder="Disciplines you lead, current focus, how teammates should reach you..."></textarea>
+        </div>
+      </div>
+      <footer class="project-dialog-footer">
+        <p class="required-note">Fields marked with * are required</p>
+        <div class="dialog-actions">
+          <button class="cancel-project-btn" type="button" data-profile-reset>Reset</button>
+          <button class="submit-project-btn" type="submit">Save Profile</button>
+        </div>
+      </footer>
+    </form>
+  </section>
+
+  <section class="overview-panel profile-panel" data-profile-panel="notifications" hidden>
+    <header class="overview-panel-header">
+      <h2>Notification preferences</h2>
+      <span class="pref-hint">Choose where each update reaches you.</span>
+    </header>
+    <form id="pref-form">
+      <div class="report-table-scroll">
+        <table class="policy-table pref-table">
+          <thead><tr><th scope="col">Update</th><th scope="col">In-app</th><th scope="col">Email</th></tr></thead>
+          <tbody id="pref-rows"></tbody>
+        </table>
+      </div>
+      <div class="pref-digest">
+        <div class="form-field">
+          <label for="pref-digest">Daily digest</label>
+          <select id="pref-digest" name="digest">
+            <option value="off">Off</option>
+            <option value="08:00">08:00 — before work</option>
+            <option value="13:00">13:00 — midday</option>
+            <option value="18:00">18:00 — end of day</option>
+          </select>
+        </div>
+      </div>
+      <footer class="project-dialog-footer">
+        <p class="pref-hint">Preferences are saved on this device.</p>
+        <div class="dialog-actions">
+          <button class="submit-project-btn" type="submit">Save Preferences</button>
+        </div>
+      </footer>
+    </form>
+  </section>
+
+  <div class="overview-dashboard profile-help" data-profile-panel="help" hidden>
+    <section class="overview-panel">
+      <header class="overview-panel-header"><h2>Frequently asked</h2></header>
+      <div class="faq-list">
+        <details class="faq-item"><summary>How do I raise an RFI on a project?</summary><p>Open the project, go to the RFIs tab, and use the Respond action on an open RFI. New RFIs come in from consultants and show in your dashboard's Pending RFIs table.</p></details>
+        <details class="faq-item"><summary>Who can see the tasks I create?</summary><p>Tasks are visible to everyone on the project team. The assignee and the person who assigned it get notified based on their notification preferences.</p></details>
+        <details class="faq-item"><summary>How do I record minutes for a meeting?</summary><p>Hover a meeting in Your Schedule and choose Notes. Saved minutes appear in the MOM Tracker under Meetings.</p></details>
+        <details class="faq-item"><summary>Can I switch between roles?</summary><p>Yes. Use the role switcher under your name in the top bar. The role you pick changes which approvals and actions you see.</p></details>
+        <details class="faq-item"><summary>Where do approved makes and standard drawings live?</summary><p>In the Library. Each tab has its own register with search and discipline filters.</p></details>
+      </div>
+      <h3 class="help-subtitle">Keyboard shortcuts</h3>
+      <dl class="shortcut-list">
+        <div><dt><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>K</kbd></dt><dd>Jump to search</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Close a dialog, drawer or menu</dd></div>
+      </dl>
+    </section>
+
+    <section class="overview-panel">
+      <header class="overview-panel-header"><h2>Contact support</h2></header>
+      <form class="help-form" id="help-form">
+        <div class="form-field">
+          <label for="help-topic">Topic</label>
+          <select id="help-topic" name="topic">
+            <option>Something isn't working</option>
+            <option>Access &amp; permissions</option>
+            <option>Data correction</option>
+            <option>Feature request</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="help-subject">Subject <span>*</span></label>
+          <input id="help-subject" name="subject" required placeholder="Short summary of the issue">
+        </div>
+        <div class="form-field">
+          <label for="help-message">Details <span>*</span></label>
+          <textarea id="help-message" name="message" required placeholder="What happened, which project, and what you expected..."></textarea>
+        </div>
+        <div class="dialog-actions">
+          <button class="submit-project-btn" type="submit">Send Request</button>
+        </div>
+      </form>
+      <p class="pref-hint help-contact">Urgent site issue? Message the <strong>MEP desk</strong> channel on Teams.</p>
+    </section>
+  </div>
+</section>
+
+<!--FOCUS MODE PAGE-->
+<section class="page-view focus-view" id="focus-view" hidden aria-labelledby="focus-title">
+  <section class="focus-card focus-hero">
+    <span class="focus-card-tag" id="focus-hero-tag">4 Pending Decisions</span>
+    <h1 class="focus-card-title" id="focus-title">Needs you first</h1>
+    <p class="focus-card-text">Work through these one at a time. Cleared items drop off your queue.</p>
+    <div class="focus-progress" aria-hidden="true"><span id="focus-progress-bar"></span></div>
+  </section>
+  <div class="focus-list" id="focus-list"></div>
+</section>
+
+<!--MEETINGS PAGE-->
+<section class="page-view meetings-view" id="meetings-view" hidden aria-label="Meetings">
+  <nav class="library-tabs" aria-label="Meeting sections">
+    <button class="library-tab active" type="button" data-meetings-tab="schedule" aria-current="page">Schedule</button>
+    <button class="library-tab" type="button" data-meetings-tab="mom">MOM Tracker</button>
+  </nav>
+
+  <section class="project-tasks-view" data-meetings-panel="schedule">
+    <div class="project-task-toolbar">
+      <div class="task-priority-filters" role="group" aria-label="Filter meetings by type">
+        <button class="task-priority-filter is-active" type="button" data-meeting-type="all" aria-pressed="true">All</button>
+        <button class="task-priority-filter" type="button" data-meeting-type="online" aria-pressed="false">Online</button>
+        <button class="task-priority-filter" type="button" data-meeting-type="in-person" aria-pressed="false">In person</button>
+      </div>
+      <label class="project-task-search">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="meetings-search" type="search" aria-label="Search meetings" placeholder="Search meetings...">
+      </label>
+      <button class="project-task-add" type="button" data-project-action="schedule-meeting"><span aria-hidden="true">+</span> Schedule Meeting</button>
+    </div>
+    <div class="meeting-days" id="meeting-days"></div>
+  </section>
+
+  <section class="project-tasks-view" data-meetings-panel="mom" hidden>
+    <div class="project-task-toolbar">
+      <div class="task-priority-filters" role="group" aria-label="Filter minutes by status">
+        <button class="task-priority-filter is-active" type="button" data-mom-status="all" aria-pressed="true">All</button>
+        <button class="task-priority-filter" type="button" data-mom-status="draft" aria-pressed="false">Draft</button>
+        <button class="task-priority-filter" type="button" data-mom-status="shared" aria-pressed="false">Shared</button>
+      </div>
+      <label class="project-task-search">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="mom-search" type="search" aria-label="Search minutes" placeholder="Search minutes...">
+      </label>
+    </div>
+    <div class="project-task-table-scroll">
+      <table class="data-table project-task-table oi-table mom-table">
+        <thead><tr>
+          <th scope="col">Meeting</th>
+          <th scope="col">Date</th>
+          <th scope="col">Recorded By</th>
+          <th scope="col">Action Items</th>
+          <th scope="col">Status</th>
+          <th scope="col">Action</th>
+        </tr></thead>
+        <tbody id="mom-rows"></tbody>
+      </table>
+    </div>
+  </section>
 </section>
 
 <!--RFIs Table-->
 <section class="panel" id="dashboard-rfi-panel">
   <div class="panel-header">
     <h2>Pending RFIs - Critical</h2>
-    <span class="panel-count">6 Pending</span>
+    <span class="panel-count" id="dashboard-rfi-count">6 Pending</span>
   </div>
 
   <table class="data-table" id="rfiTable">
@@ -1776,7 +2171,7 @@ Logout
       <td>None</td>
       <td>Electrical</td>
       <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
     </tr>
     <tr>
       <td>RFI-209</td>
@@ -1785,7 +2180,7 @@ Logout
       <td>None</td>
       <td>Electrical</td>
       <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
     </tr>
     <tr>
       <td>RFI-209</td>
@@ -1794,19 +2189,19 @@ Logout
       <td>None</td>
       <td>Electrical</td>
       <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
     </tr>
   </tbody>
 </table>
 
-  <a href="#" class="view-all">View All RFIs ↗</a>
+  <a href="#open-items/rfis" class="view-all" data-route="open-items/rfis">View All RFIs ↗</a>
 </section>
 
 <section class="panel" id="dashboard-deliverables-panel">
   <div class="panel-header">
     <h2>Project Deliverables</h2>
     <div class="panel-actions">
-      <button class="add-btn" type="button" aria-label="Add deliverable">
+      <button class="add-btn" type="button" aria-label="Add deliverable" data-project-action="add-deliverable">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7.99967 3.33301V12.6663M3.33301 7.99967H12.6663" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="panel-count" aria-live="polite">0/3</span>
@@ -1816,8 +2211,7 @@ Logout
   <div class="deliverables-scroll">
     <table class="data-table aligned-table" id="deliverables-table">
   <colgroup>
-    <col class="col-check"><col class="col-id"><col class="col-main"><col class="col-project">
-    <col class="col-status"><col class="col-due"><col class="col-person"><col class="col-action">
+    <col class="col-check"><col class="col-main"><col class="col-project"><col class="col-status"><col class="col-due"><col class="col-action">
   </colgroup>
       <thead>
         <tr>
@@ -1839,7 +2233,7 @@ Logout
           <td>Lodha One • Tower B</td>
           <td><span class="task-state delayed">Delayed</span></td>
           <td><span class="status overdue">Overdue</span></td>
-          <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
+          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
         </tr>
         <tr>
           <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Coordinated Typical Floor GFC"><span class="checkbox-box"></span></label></td>
@@ -1858,13 +2252,13 @@ Logout
           <td>Palava • Phase 2</td>
           <td><span class="task-state pending">Pending</span></td>
           <td><span class="status due-tomorrow">Due Tomorrow</span></td>
-          <td><button class="remind-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
+          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <a href="#" class="view-all">View All Deliverables ↗</a>
+  <a href="#open-items/deliverables" class="view-all" data-route="open-items/deliverables">View All Deliverables ↗</a>
 </section>
 </div>
 
@@ -1892,8 +2286,8 @@ Logout
     </button>
 
     <div class="rail-date-block">
-      <h2 class="rail-date">Wednesday, 2 September</h2>
-      <p class="rail-week">Week 36 · 2026</p>
+      <h2 class="rail-date" id="rail-date">Wednesday, 2 September</h2>
+      <p class="rail-week" id="rail-week">Week 36 · 2026</p>
     </div>
 
     <button class="rail-calendar-btn" type="button" aria-label="Open calendar">
@@ -1919,10 +2313,10 @@ Logout
 
 <!--FOCUS CARD-->
 <section class="focus-card">
-  <span class="focus-card-tag">4 Pending Decisions</span>
+  <span class="focus-card-tag" id="focus-pending-tag">4 Pending Decisions</span>
   <h3 class="focus-card-title">Needs you first</h3>
   <p class="focus-card-text">Clear out your dashboard queue and find your workflow flow-state.</p>
-  <button class="focus-card-btn" type="button">
+  <button class="focus-card-btn" type="button" data-route="focus">
     Open focus mode
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M4 12L12 4M12 10V4H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1934,14 +2328,23 @@ Logout
 <section class="schedule">
   <div class="rail-section-title">
     <h3>Your Schedule - Today</h3>
-    <a href="#" class="rail-view-all">View All ↗</a>
+    <a href="#meetings" class="rail-view-all" data-route="meetings">View All ↗</a>
   </div>
   <div class="schedule-list" id="schedule-list"></div>
 </section>
-<section class="rail-calendar" id="rail-calendar" hidden></section>
 </aside>
 
 </div>
+  <!-- Signed-out screen (shown after Log Out) -->
+  <section class="signed-out-screen" id="signed-out-screen" hidden aria-labelledby="signed-out-title">
+    <div class="signed-out-card">
+      <div class="brand-logo">A</div>
+      <h1 id="signed-out-title">You've signed out</h1>
+      <p>Your work is saved. Sign back in to pick up where you left off.</p>
+      <button class="submit-project-btn" type="button" data-sign-in>Continue as Apurva Bhadange</button>
+    </div>
+  </section>
+
   <script src="app.js" defer></script>
 </body>
 </html>
