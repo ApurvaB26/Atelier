@@ -325,16 +325,22 @@ function renderCalendar(datePicker) {
   daysContainer.replaceChildren(...calendarDays);
 }
 
+// Measurements come back in screen pixels, but the panel's fixed top/left get scaled by the
+// page zoom (--app-zoom), so convert everything to CSS pixels first
 function positionCalendar(datePicker) {
   const panel = datePicker.querySelector('.calendar-panel');
-  const triggerRect = datePicker.querySelector('summary').getBoundingClientRect();
-  const panelRect = panel.getBoundingClientRect();
+  const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+  const toCss = (rect) => ({ left: rect.left / zoom, top: rect.top / zoom, bottom: rect.bottom / zoom, width: rect.width / zoom, height: rect.height / zoom });
+  const triggerRect = toCss(datePicker.querySelector('summary').getBoundingClientRect());
+  const panelRect = toCss(panel.getBoundingClientRect());
+  const viewportWidth = window.innerWidth / zoom;
+  const viewportHeight = window.innerHeight / zoom;
   const edgePadding = 12;
-  const left = Math.min(Math.max(edgePadding, triggerRect.left), window.innerWidth - panelRect.width - edgePadding);
-  const roomBelow = window.innerHeight - triggerRect.bottom - edgePadding;
+  const left = Math.min(Math.max(edgePadding, triggerRect.left), viewportWidth - panelRect.width - edgePadding);
+  const roomBelow = viewportHeight - triggerRect.bottom - edgePadding;
   const roomAbove = triggerRect.top - edgePadding;
   const top = roomBelow >= panelRect.height || roomBelow >= roomAbove
-    ? Math.min(triggerRect.bottom + 8, window.innerHeight - panelRect.height - edgePadding)
+    ? Math.min(triggerRect.bottom + 8, viewportHeight - panelRect.height - edgePadding)
     : Math.max(edgePadding, triggerRect.top - panelRect.height - 8);
 
   panel.style.setProperty('--calendar-panel-top', `${top}px`);
@@ -344,22 +350,47 @@ function positionCalendar(datePicker) {
 function selectCalendarDate(datePicker, date) {
   const dateInput = document.getElementById(datePicker.dataset.datePicker);
   dateInput.value = formatDateInput(date);
-  datePicker.querySelector('.date-picker-value').textContent = new Intl.DateTimeFormat('en', {
-    month: 'short', day: 'numeric', year: 'numeric'
-  }).format(date);
   datePicker.viewDate = new Date(date.getFullYear(), date.getMonth(), 1);
   renderCalendar(datePicker);
   datePicker.open = false;
   dateInput.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-datePickers.forEach((datePicker) => {
+// One calendar for every date field: the Create Project pickers in the HTML, plus any
+// native <input type="date"> that enhanceDateInputs() swaps for the same picker
+const formatPickerDate = (date) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+const allDatePickers = () => Array.from(document.querySelectorAll('.date-picker'));
+
+function syncDatePickerLabel(datePicker) {
   const dateInput = document.getElementById(datePicker.dataset.datePicker);
-  const placeholder = datePicker.dataset.datePicker === 'project-start-date' ? 'Select start date' : 'Select target date';
+  if (!dateInput) return;
+  const date = parseDateInput(dateInput.value);
+  datePicker.querySelector('.date-picker-value').textContent = date ? formatPickerDate(date) : datePicker.dataset.placeholder;
+  datePicker.classList.toggle('has-value', Boolean(date));
+}
+
+// Code all over the app sets input.value directly; keep the picker label in step with it
+const nativeInputValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+function watchDateValue(dateInput, datePicker) {
+  Object.defineProperty(dateInput, 'value', {
+    configurable: true,
+    get() { return nativeInputValue.get.call(this); },
+    set(value) {
+      nativeInputValue.set.call(this, value);
+      syncDatePickerLabel(datePicker);
+    }
+  });
+  dateInput.form?.addEventListener('reset', () => setTimeout(() => syncDatePickerLabel(datePicker)));
+}
+
+function setupDatePicker(datePicker) {
+  if (datePicker.dataset.ready) return;
+  datePicker.dataset.ready = 'true';
+  const dateInput = document.getElementById(datePicker.dataset.datePicker);
 
   datePicker.addEventListener('toggle', () => {
     if (datePicker.open) {
-      datePickers.forEach((otherPicker) => {
+      allDatePickers().forEach((otherPicker) => {
         if (otherPicker !== datePicker) otherPicker.open = false;
       });
       const selectedDate = parseDateInput(dateInput.value);
@@ -389,7 +420,6 @@ datePickers.forEach((datePicker) => {
 
   datePicker.querySelector('.calendar-clear').addEventListener('click', () => {
     dateInput.value = '';
-    datePicker.querySelector('.date-picker-value').textContent = placeholder;
     datePicker.viewDate = new Date();
     renderCalendar(datePicker);
     datePicker.open = false;
@@ -399,14 +429,85 @@ datePickers.forEach((datePicker) => {
   datePicker.querySelector('.calendar-today').addEventListener('click', () => {
     selectCalendarDate(datePicker, new Date());
   });
+
+  // A required date left empty opens its calendar instead of a hidden validation bubble
+  dateInput.addEventListener('invalid', () => {
+    datePicker.open = true;
+    datePicker.querySelector('summary').focus();
+  });
+
+  // Clicking the field's label opens the calendar rather than the hidden native input
+  Array.from(dateInput.labels || []).forEach((label) => {
+    label.addEventListener('click', (event) => {
+      if (datePicker.contains(event.target)) return;
+      event.preventDefault();
+      datePicker.open = !datePicker.open;
+      datePicker.querySelector('summary').focus();
+    });
+  });
+
+  watchDateValue(dateInput, datePicker);
+  syncDatePickerLabel(datePicker);
+}
+
+const calendarSummaryIcon = '<svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 2.5v4M13.5 2.5v4M3.5 8h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const calendarPanelHtml = `
+  <div class="calendar-panel">
+    <div class="calendar-topline"><button class="calendar-back" type="button" aria-label="Previous month">‹</button><div><strong class="calendar-selected-date">Select a date</strong><span class="calendar-week"></span></div><button class="calendar-open-native" type="button" aria-label="Go to selected month">▦</button></div>
+    <div class="calendar-monthbar"><strong class="calendar-month-label"></strong><div><button class="calendar-month-prev" type="button" aria-label="Previous month">⌃</button><button class="calendar-month-next" type="button" aria-label="Next month">⌄</button></div></div>
+    <div class="calendar-weekdays" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+    <div class="calendar-days" role="grid" aria-label="Calendar dates"></div>
+    <div class="calendar-footer"><button class="calendar-clear" type="button">Clear</button><button class="calendar-today" type="button">Today</button></div>
+  </div>`;
+let dateInputSeq = 0;
+
+function enhanceDateInputs(root = document) {
+  root.querySelectorAll('input[type="date"]:not(.date-value-input)').forEach((dateInput) => {
+    if (!dateInput.id) dateInput.id = `date-field-${++dateInputSeq}`;
+    const label = (dateInput.getAttribute('aria-label') || dateInput.labels?.[0]?.textContent || 'date').replace('*', '').trim();
+    dateInput.classList.add('visually-hidden', 'date-value-input');
+    dateInput.tabIndex = -1;
+    dateInput.setAttribute('aria-hidden', 'true');
+
+    const datePicker = document.createElement('details');
+    datePicker.className = 'date-picker';
+    datePicker.dataset.datePicker = dateInput.id;
+    datePicker.dataset.placeholder = dateInput.dataset.placeholder || 'Select date';
+    datePicker.innerHTML = `<summary aria-label="Choose ${escapeHtml(label.toLowerCase())}"><span class="date-picker-value"></span>${calendarSummaryIcon}</summary>${calendarPanelHtml}`;
+
+    // Drawer fields wrap the input in a bordered control; the picker brings its own border
+    const wrapper = dateInput.closest('.drawer-control');
+    (wrapper || dateInput).after(datePicker);
+    if (wrapper) wrapper.hidden = true;
+    setupDatePicker(datePicker);
+  });
+}
+
+datePickers.forEach(setupDatePicker);
+
+document.addEventListener('click', (event) => {
+  allDatePickers().forEach((datePicker) => {
+    if (datePicker.open && !datePicker.contains(event.target)) datePicker.open = false;
+  });
 });
+
+// Esc closes an open calendar first, before it can close the dialog or drawer underneath
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const openPicker = document.querySelector('.date-picker[open]');
+  if (!openPicker) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  openPicker.open = false;
+  openPicker.querySelector('summary').focus();
+}, true);
 
 window.addEventListener('resize', () => {
-  datePickers.filter((datePicker) => datePicker.open).forEach(positionCalendar);
+  allDatePickers().filter((datePicker) => datePicker.open).forEach(positionCalendar);
 });
 
-projectDialog.addEventListener('scroll', () => {
-  datePickers.filter((datePicker) => datePicker.open).forEach(positionCalendar);
+document.addEventListener('scroll', () => {
+  allDatePickers().filter((datePicker) => datePicker.open).forEach(positionCalendar);
 }, true);
 
 openProjectDialogButton.addEventListener('click', openProjectDialog);
@@ -575,9 +676,7 @@ projectForm.addEventListener('submit', (event) => {
   });
   datePickers.forEach((datePicker) => {
     datePicker.open = false;
-    datePicker.querySelector('.date-picker-value').textContent = datePicker.dataset.datePicker === 'project-start-date'
-      ? 'Select start date'
-      : 'Select target date';
+    syncDatePickerLabel(datePicker);
     datePicker.viewDate = new Date();
   });
   colleagueSearchInput.value = '';
@@ -735,6 +834,7 @@ let projectTaskPriorityFilter = "all";
 const projectSubViews = {
   tasks: projectTasksView,
   rfis: projectRfisView,
+  transmittals: document.getElementById("project-transmittals-view"),
   deliverables: document.getElementById("project-deliverables-view"),
   files: document.getElementById("project-files-view"),
   team: document.getElementById("project-team-view"),
@@ -742,7 +842,7 @@ const projectSubViews = {
   activity: document.getElementById("project-activity-view")
 };
 const projectViewLabels = {
-  tasks: "Tasks", rfis: "RFIs", deliverables: "Deliverables", files: "Files",
+  tasks: "Tasks", rfis: "RFIs", deliverables: "Deliverables", transmittals: "Transmittals", files: "Files",
   team: "Team", milestones: "Milestones", activity: "Activity"
 };
 
@@ -919,49 +1019,6 @@ document.addEventListener("click", (e) => {
   openProject(card.querySelector("h2").textContent);
 });
 
-
-//TOWER FILTER BUTTON
-const towerBtn = document.querySelector(".tower-filter");
-const towerMenu = document.querySelector(".tower-menu");
-const starredBtn = document.querySelector(".starred-towers-btn");
-
-towerBtn.addEventListener("click", () => {
-  towerMenu.hidden = !towerMenu.hidden;
-});
-
-towerMenu.addEventListener("click", (e) => {
-  const star = e.target.closest(".tower-star");
-  if (star) {
-    const on = star.getAttribute("aria-pressed") === "true";
-    star.setAttribute("aria-pressed", String(!on));
-    applyStarredFilter();
-    return;
-  }
-
-  const name = e.target.closest(".tower-name");
-  if (name) {
-    document.querySelector(".tower-filter-label").textContent = name.textContent;
-    towerMenu.hidden = true;
-  }
-});
-
-starredBtn.addEventListener("click", () => {
-  const on = starredBtn.getAttribute("aria-pressed") === "true";
-  starredBtn.setAttribute("aria-pressed", String(!on));
-  applyStarredFilter();
-});
-
-function applyStarredFilter() {
-  const onlyStarred = starredBtn.getAttribute("aria-pressed") === "true";
-  towerMenu.querySelectorAll(".tower-row").forEach((row) => {
-    const star = row.querySelector(".tower-star");
-    row.hidden = onlyStarred && star && star.getAttribute("aria-pressed") !== "true";
-  });
-}
-
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".tower-dropdown")) towerMenu.hidden = true;
-});
 
 /* COLLAPSE SIDEBAR */
 document.querySelector(".collapse-btn").addEventListener("click", () => {
@@ -2365,6 +2422,35 @@ function actionFieldHtml(field) {
     return `<label class="action-check"><input type="checkbox" name="${field.name}"${field.value ? " checked" : ""}> ${escapeHtml(field.label)}</label>`;
   }
 
+  // Searchable people picker grouped by team (MEP first); field.exclude hides people already invited
+  if (field.type === "people") {
+    const exclude = new Set([profileState.name, ...(field.exclude || [])]);
+    const groups = teamGroups.map((group) => {
+      const people = teamMembers.filter((member) => member.group === group.key && !exclude.has(member.name));
+      if (!people.length) return "";
+      return `
+        <div class="people-group" data-people-group>
+          <p class="people-group-title">${escapeHtml(group.label)}</p>
+          ${people.map((member) => `
+            <label class="action-check people-option" data-people-option>
+              <input type="checkbox" name="${field.name}" value="${escapeHtml(member.name)}">
+              <span class="member-avatar">${escapeHtml(initialsOf(member.name))}</span>
+              <span class="member-copy"><strong>${escapeHtml(member.name)}</strong><small>${escapeHtml(member.role)}</small></span>
+            </label>`).join("")}
+        </div>`;
+    }).join("");
+    return `
+      <fieldset class="form-field people-field">
+        <legend>${escapeHtml(field.label)}</legend>
+        <label class="colleague-search people-search">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="2.2"></circle><path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+          <input type="search" data-people-search placeholder="Search people or teams..." aria-label="Search people">
+        </label>
+        <div class="people-list">${groups}<p class="no-colleagues" data-people-empty hidden>No one matches.</p></div>
+        <p class="people-count" data-people-count aria-live="polite">No one selected</p>
+      </fieldset>`;
+  }
+
   if (field.type === "checklist") {
     return `
       <fieldset class="form-field action-checklist">
@@ -2380,7 +2466,7 @@ function actionFieldHtml(field) {
     control = `<select id="${id}" name="${field.name}">${field.options.map((option) => `<option${option === field.value ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
   } else if (field.type === "file") {
     control = `<label class="task-upload" for="${id}"><span class="task-upload-text" data-default-label="Upload Files">Upload Files</span>${uploadIcon}</label>
-      <input class="visually-hidden" id="${id}" name="${field.name}" type="file">`;
+      <input class="visually-hidden" id="${id}" name="${field.name}" type="file"${field.accept ? ` accept="${field.accept}"` : ""}>`;
   } else {
     const extra = [field.min !== undefined ? ` min="${field.min}"` : "", field.max !== undefined ? ` max="${field.max}"` : ""].join("");
     control = `<input id="${id}" name="${field.name}" type="${field.type || "text"}" value="${escapeHtml(field.value ?? "")}" placeholder="${escapeHtml(field.placeholder || "")}"${extra}${required}>`;
@@ -2399,6 +2485,7 @@ function openActionDialog(config) {
   subtitle.textContent = config.subtitle || "";
   subtitle.hidden = !config.subtitle;
   actionFields.innerHTML = `${config.body || ""}${(config.fields || []).map(actionFieldHtml).join("")}<p class="action-error" role="alert" hidden></p>`;
+  enhanceDateInputs(actionFields);
   actionSubmit.textContent = config.submitLabel || "Save";
   actionSubmit.hidden = config.submitLabel === null;
   actionCancel.textContent = config.cancelLabel || "Cancel";
@@ -2429,7 +2516,7 @@ actionForm.addEventListener("submit", (e) => {
   const formData = new FormData(actionForm);
   const values = {};
   flattenFields(actionConfig.fields).forEach((field) => {
-    if (field.type === "checklist") values[field.name] = formData.getAll(field.name);
+    if (field.type === "checklist" || field.type === "people") values[field.name] = formData.getAll(field.name);
     else if (field.type === "checkbox") values[field.name] = formData.has(field.name);
     else if (field.type === "file") values[field.name] = formData.get(field.name)?.name ? formData.get(field.name) : null;
     else values[field.name] = String(formData.get(field.name) ?? "").trim();
@@ -2440,7 +2527,34 @@ actionForm.addEventListener("submit", (e) => {
   closeActionDialog();
 });
 
+actionFields.addEventListener("input", (e) => {
+  const search = e.target.closest("[data-people-search]");
+  if (!search) return;
+  const query = search.value.trim().toLocaleLowerCase();
+  const field = search.closest(".people-field");
+  let matches = 0;
+  field.querySelectorAll("[data-people-group]").forEach((group) => {
+    const groupMatches = group.querySelector(".people-group-title").textContent.toLocaleLowerCase().includes(query);
+    let visibleInGroup = 0;
+    group.querySelectorAll("[data-people-option]").forEach((option) => {
+      option.hidden = !(groupMatches || option.textContent.toLocaleLowerCase().includes(query));
+      if (!option.hidden) visibleInGroup += 1;
+    });
+    group.hidden = visibleInGroup === 0;
+    matches += visibleInGroup;
+  });
+  field.querySelector("[data-people-empty]").hidden = matches !== 0;
+});
+
 actionFields.addEventListener("change", (e) => {
+  const person = e.target.closest("[data-people-option] input");
+  if (person) {
+    const field = person.closest(".people-field");
+    const count = field.querySelectorAll("[data-people-option] input:checked").length;
+    field.querySelector("[data-people-count]").textContent = count ? `${count} selected` : "No one selected";
+    return;
+  }
+
   const input = e.target.closest("input[type='file']");
   if (!input) return;
   const label = actionFields.querySelector(`label[for="${input.id}"] .task-upload-text`);
@@ -2500,7 +2614,7 @@ const toCsv = (rows) => rows.map((row) => row.map((value) => `"${String(value).r
 function openRemindDialog(row, button) {
   const title = rowTitle(row);
   const waitingOn = row.querySelector(".waiting-tag")?.textContent.replace(/^[\s\S]*Waiting on\s*/i, "").trim();
-  const recipient = waitingOn || (row.matches("[data-task-row]") ? row.cells[6].textContent.trim() : "");
+  const recipient = waitingOn || row.dataset.recipient || (row.matches("[data-task-row]") ? row.cells[6].textContent.trim() : "");
   const due = rowDueStatus(row)?.textContent.trim() || "";
   const duePhrase = /overdue|due today|due tomorrow/i.test(due) ? ` — it's ${due.toLowerCase()}` : due ? ` — it's due ${due}` : "";
 
@@ -2568,17 +2682,6 @@ function openRespondDialog(row, button) {
   });
 }
 
-function openRfiViewDialog(row) {
-  const cells = Array.from(row.cells, (cell) => cell.textContent.trim());
-  openActionDialog({
-    title: cells[0],
-    subtitle: rowTitle(row),
-    body: detailList([["Wing", cells[2]], ["Impact", cells[3]], ["Discipline", cells[4]], ["Raised by", cells[5]], ["Status", "Closed"]]),
-    submitLabel: null,
-    cancelLabel: "Close"
-  });
-}
-
 document.addEventListener("click", (e) => {
   const button = e.target.closest("[data-row-action]");
   if (!button) return;
@@ -2586,7 +2689,7 @@ document.addEventListener("click", (e) => {
   const action = button.dataset.rowAction;
   if (action === "remind") openRemindDialog(row, button);
   else if (action === "respond") openRespondDialog(row, button);
-  else if (action === "view") openRfiViewDialog(row);
+  else if (action === "view" || action === "open") openRecordForRow(row);
 });
 
 /* DASHBOARD + OPEN ITEMS: new tasks */
@@ -2650,98 +2753,609 @@ function addDashboardDeliverable(values) {
   updateDeliverablesCount();
 }
 
-/* PROJECT DELIVERABLES TAB */
-const projectDeliverablesView = document.getElementById("project-deliverables-view");
-const projectDeliverablesConfig = {
-  title: "Deliverables",
-  checkbox: true,
-  towers: true,
-  addAction: { action: "add-deliverable", label: "Add Deliverable" },
-  filter: { label: "Discipline", value: (r) => r.sub },
-  groups: [
-    { key: "pending", label: "Pending", tone: "" },
-    { key: "in-review", label: "In Review", tone: "is-blue" },
-    { key: "completed", label: "Completed", tone: "is-green" }
-  ],
-  columns: [
-    { label: "Document Name", cell: (r) => oiTitle(r.title, r.sub + (r.waiting ? waiting(r.waiting) : ""), oiBadge(r.priority)) },
-    { label: "Wing No.", cell: (r) => r.wing },
-    { label: "Status", cell: (r) => `<span class="task-state ${r.state}">${r.stateLabel}</span>` },
-    { label: "Due Date", cell: (r) => (r.group === "completed" ? "—" : oiDue(r.dueLabel, r.due)) },
-    { label: "Action", cell: (r) => (r.action ? oiAction(r.action) : "") }
-  ],
-  rows: [
-    { title: "Issue Fire Tender Package", sub: "Fire", waiting: "MEP Consultant", priority: "High", wing: "Tower 26", state: "delayed", stateLabel: "Delayed", due: "overdue", dueLabel: "Overdue", group: "pending", action: "Remind" },
-    { title: "Electrical Lighting Layout Rev C", sub: "Electrical", priority: "Medium", wing: "Tower 26", state: "in-progress", stateLabel: "In Progress", due: "today", dueLabel: "Due Today", group: "pending" },
-    { title: "Drainage Calculations", sub: "Plumbing", priority: "Medium", wing: "Tower 16", state: "pending", stateLabel: "Pending", due: "tomorrow", dueLabel: "Due Tomorrow", group: "pending" },
-    { title: "HVAC Equipment Schedule", sub: "HVAC", waiting: "Architect", priority: "Low", wing: "MLCP", state: "pending", stateLabel: "Pending", due: "week", dueLabel: dueInfo(toDateInput(new Date(Date.now() + 4 * 86400000))).label, group: "pending", action: "Remind" },
-    { title: "Plumbing Single Line Diagram R3", sub: "Plumbing", priority: "Medium", wing: "Tower 16", state: "in-review", stateLabel: "In Review", due: "week", dueLabel: dueInfo(toDateInput(new Date(Date.now() + 6 * 86400000))).label, group: "in-review" },
-    { title: "Fire Pump Room Layout", sub: "Fire", priority: "High", wing: "UGT 2", state: "completed", stateLabel: "Completed", due: "", group: "completed" },
-    { title: "Concept MEP Design Report", sub: "Coordinated", priority: "Low", wing: "All Towers", state: "completed", stateLabel: "Completed", due: "", group: "completed" }
-  ]
+/* PROJECT DELIVERABLES: design deliverable tracker */
+const daysFromNow = (days) => toDateInput(new Date(Date.now() + days * 86400000));
+const trackerStatuses = ["Not Started", "In Progress", "In Review", "Submitted", "Approved", "On Hold"];
+const deliverableStateClass = {
+  "Not Started": "not-started", "In Progress": "in-progress", "In Review": "in-review", Submitted: "in-review",
+  Approved: "completed", Completed: "completed", "On Hold": "on-hold", Delayed: "delayed", Pending: "pending"
+};
+const trackerStages = ["Concept", "Schematic Design", "Design Development", "Tender", "GFC", "VFC", "As-built"];
+const trackerDepartments = ["Electrical", "Plumbing", "HVAC", "Fire Fighting", "ELV", "Coordinated"];
+const trackerTowers = ["Tower 16", "Tower 26", "MLCP", "UGT 2"];
+const trackerFloors = ["Basement 2", "Basement 1", "Ground", "Podium", "L1–L10", "L11–L20", "Terrace", "All floors"];
+const trackerDimensions = { tower: "Tower", stage: "Stage", department: "Department", floor: "Floor" };
+
+let deliverableTracker = [
+  { docNo: "LB-EL-T26-101", title: "Electrical lighting layout Rev C", tower: "Tower 26", floor: "L1–L10", stage: "GFC", department: "Electrical", due: daysFromNow(0), status: "In Progress", owner: "Fatima Khan" },
+  { docNo: "LB-EL-T26-102", title: "Small power & DB schedule", tower: "Tower 26", floor: "L11–L20", stage: "GFC", department: "Electrical", due: daysFromNow(9), status: "Not Started", owner: "Fatima Khan" },
+  { docNo: "LB-FF-T26-201", title: "Fire tender package", tower: "Tower 26", floor: "All floors", stage: "Tender", department: "Fire Fighting", due: daysFromNow(-3), status: "In Progress", owner: "Apurva Bhadange", waiting: "MEP Consultant" },
+  { docNo: "LB-HV-T26-301", title: "Typical floor ventilation layout", tower: "Tower 26", floor: "L1–L10", stage: "Design Development", department: "HVAC", due: daysFromNow(12), status: "In Review", owner: "Neha Kapoor" },
+  { docNo: "LB-PH-T16-110", title: "Drainage calculations", tower: "Tower 16", floor: "L1–L10", stage: "Design Development", department: "Plumbing", due: daysFromNow(1), status: "Not Started", owner: "Riya Shah" },
+  { docNo: "LB-PH-T16-111", title: "Plumbing single line diagram R3", tower: "Tower 16", floor: "All floors", stage: "Design Development", department: "Plumbing", due: daysFromNow(6), status: "Submitted", owner: "Riya Shah" },
+  { docNo: "LB-EL-T16-120", title: "Terrace lightning protection layout", tower: "Tower 16", floor: "Terrace", stage: "Schematic Design", department: "Electrical", due: daysFromNow(-12), status: "Approved", owner: "Fatima Khan" },
+  { docNo: "LB-HV-MLCP-301", title: "HVAC equipment schedule — chillers", tower: "MLCP", floor: "Basement 2", stage: "Design Development", department: "HVAC", due: daysFromNow(4), status: "Not Started", owner: "Neha Kapoor", waiting: "Architect" },
+  { docNo: "LB-HV-MLCP-302", title: "Basement jet fan layout", tower: "MLCP", floor: "Basement 1", stage: "GFC", department: "HVAC", due: daysFromNow(-20), status: "Approved", owner: "Neha Kapoor" },
+  { docNo: "LB-FF-MLCP-210", title: "Sprinkler layout — parking levels", tower: "MLCP", floor: "Basement 1", stage: "Tender", department: "Fire Fighting", due: daysFromNow(15), status: "In Progress", owner: "Apurva Bhadange" },
+  { docNo: "LB-FF-UGT2-220", title: "Fire pump room layout", tower: "UGT 2", floor: "Basement 2", stage: "VFC", department: "Fire Fighting", due: daysFromNow(-30), status: "Approved", owner: "Apurva Bhadange" },
+  { docNo: "LB-CO-ALL-001", title: "Concept MEP design report", tower: "All Towers", floor: "All floors", stage: "Concept", department: "Coordinated", due: daysFromNow(-60), status: "Approved", owner: "Apurva Bhadange" },
+  { docNo: "LB-ELV-T26-401", title: "Access control & CCTV riser", tower: "Tower 26", floor: "Ground", stage: "Schematic Design", department: "ELV", due: daysFromNow(20), status: "On Hold", owner: "Fatima Khan" }
+];
+let trackerSource = "Sample tracker";
+let trackerGroupBy = "tower";
+const trackerFilters = { tower: "all", stage: "all", department: "all", floor: "all", status: "all" };
+const collapsedTrackerGroups = new Set();
+const trackerSearch = document.getElementById("tracker-search");
+
+// Basements first, then ground, podium, numbered levels, terrace
+function floorRank(floor) {
+  const value = floor.toLowerCase();
+  const number = Number((value.match(/\d+/) || [0])[0]);
+  if (/basement|^b\d/.test(value)) return -100 - number;
+  if (/ground|^g$|^gf/.test(value)) return 0;
+  if (/podium|stilt|plinth/.test(value)) return 1;
+  if (/terrace|roof|ohwt/.test(value)) return 1000;
+  if (/all|typical/.test(value) && !/\d/.test(value)) return 2000;
+  if (/\d/.test(value)) return 10 + number;
+  return 1500;
+}
+
+const stageRank = (stage) => {
+  const index = trackerStages.findIndex((s) => s.toLowerCase() === stage.toLowerCase());
+  return index === -1 ? 100 : index;
 };
 
-const deliverablesMetric = document.querySelector(".project-metric-icon.deliverables + div strong");
-
-function buildProjectDeliverables() {
-  buildItemsPanel(projectDeliverablesView, projectDeliverablesConfig, "project-deliverables");
+function trackerGroupSort(dimension) {
+  if (dimension === "floor") return (a, b) => floorRank(a) - floorRank(b) || a.localeCompare(b);
+  if (dimension === "stage") return (a, b) => stageRank(a) - stageRank(b) || a.localeCompare(b);
+  return (a, b) => a.localeCompare(b, undefined, { numeric: true });
 }
 
-function addProjectDeliverable(values) {
-  const due = dueInfo(values.due);
-  projectDeliverablesConfig.rows.unshift({
-    title: escapeHtml(values.title),
-    sub: escapeHtml(values.discipline),
-    priority: values.priority,
-    wing: escapeHtml(values.wing),
-    state: "not-started",
-    stateLabel: "Not Started",
-    due: due.due,
-    dueLabel: due.label,
-    group: "pending"
+const trackerDue = (item) => (item.status === "Approved" ? { label: "—", cls: "due-date", due: "" } : dueInfo(item.due));
+
+function trackerMatches(item) {
+  const query = trackerSearch.value.trim().toLocaleLowerCase();
+  return Object.entries(trackerFilters).every(([key, value]) => value === "all" || item[key] === value)
+    && `${item.docNo} ${item.title} ${item.owner || ""} ${item.tower} ${item.floor} ${item.stage} ${item.department}`.toLocaleLowerCase().includes(query);
+}
+
+function renderTrackerFilters() {
+  const keys = ["tower", "floor", "stage", "department", "status"];
+  const labels = { ...trackerDimensions, status: "Status" };
+  document.getElementById("tracker-filters").innerHTML = keys.map((key) => {
+    const values = [...new Set(deliverableTracker.map((item) => item[key]))].sort(key === "status" ? undefined : trackerGroupSort(key));
+    if (trackerFilters[key] !== "all" && !values.includes(trackerFilters[key])) trackerFilters[key] = "all";
+    return `
+      <div class="tracker-filter">
+        <label for="tracker-filter-${key}">${labels[key]}</label>
+        <select id="tracker-filter-${key}" data-tracker-filter="${key}">
+          <option value="all">All</option>
+          ${values.map((value) => `<option${trackerFilters[key] === value ? " selected" : ""}>${escapeHtml(value)}</option>`).join("")}
+        </select>
+      </div>`;
+  }).join("") + '<button class="clear-team-selection tracker-clear" type="button" data-tracker-clear-filters>Clear filters</button>';
+
+  const active = Object.values(trackerFilters).filter((value) => value !== "all").length;
+  const badge = document.getElementById("tracker-filter-count");
+  badge.textContent = active;
+  badge.hidden = active === 0;
+}
+
+function renderTracker() {
+  const columns = [
+    ["docNo", "Doc No."], ["title", "Deliverable"], ["tower", "Tower"], ["floor", "Floor"],
+    ["stage", "Stage"], ["department", "Department"], ["due", "Due Date"], ["status", "Status"]
+  ].filter(([key]) => key !== trackerGroupBy); // the grouped column would repeat the group header
+
+  document.getElementById("tracker-head").innerHTML = `<tr>${columns.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>`;
+
+  const visible = deliverableTracker.map((item, index) => ({ item, index })).filter(({ item }) => trackerMatches(item));
+  const groups = new Map();
+  visible.forEach((entry) => {
+    const key = entry.item[trackerGroupBy] || "Unassigned";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
   });
-  buildProjectDeliverables();
-  deliverablesMetric.textContent = Number(deliverablesMetric.textContent) + 1;
-  prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} added <b>${escapeHtml(values.title)}</b>`, tag: values.wing });
+
+  const cell = (item, key) => {
+    if (key === "title") {
+      const parts = [item.owner ? escapeHtml(item.owner) : "", item.waiting ? `<span class="waiting-tag">Waiting on ${escapeHtml(item.waiting)}</span>` : ""].filter(Boolean);
+      return `<strong>${escapeHtml(item.title)}</strong>${parts.length ? `<span class="row-subtitle">${parts.join(" · ")}</span>` : ""}`;
+    }
+    if (key === "due") {
+      const due = trackerDue(item);
+      return `<span class="status ${due.cls}">${due.label}</span>`;
+    }
+    if (key === "status") return `<span class="task-state ${deliverableStateClass[item.status] || "pending"}">${escapeHtml(item.status)}</span>`;
+    return escapeHtml(item[key] || "—");
+  };
+
+  const sortedKeys = [...groups.keys()].sort(trackerGroupSort(trackerGroupBy));
+  document.getElementById("tracker-list").innerHTML = sortedKeys.map((key) => {
+    const entries = groups.get(key);
+    const approved = entries.filter(({ item }) => item.status === "Approved").length;
+    const overdue = entries.filter(({ item }) => trackerDue(item).due === "overdue").length;
+    const open = !collapsedTrackerGroups.has(`${trackerGroupBy}:${key}`);
+    return `
+      <tr class="project-task-group-row"><th colspan="${columns.length}">
+        <button class="task-group-toggle" type="button" data-tracker-toggle="${escapeHtml(key)}" aria-expanded="${open}">
+          <span class="task-group-chevron" aria-hidden="true"></span>
+          <span>${escapeHtml(key)}</span>
+          <span class="task-group-count">${String(entries.length).padStart(2, "0")}</span>
+          <span class="tracker-group-meta">
+            ${overdue ? `<span class="status overdue">${overdue} overdue</span>` : ""}
+            <span class="report-meter" aria-hidden="true"><span style="width:${Math.round((approved / entries.length) * 100)}%"></span></span>
+            ${approved}/${entries.length} approved
+          </span>
+        </button>
+      </th></tr>
+      ${open ? entries.map(({ item, index }) => `
+        <tr class="project-task-row tracker-row${item.status === "Approved" ? " is-approved" : ""}" data-tracker-index="${index}" tabindex="0">
+          ${columns.map(([colKey]) => `<td>${cell(item, colKey)}</td>`).join("")}
+        </tr>`).join("") : ""}`;
+  }).join("");
+
+  document.getElementById("tracker-empty").hidden = visible.length !== 0;
+
+  const approvedTotal = deliverableTracker.filter((item) => item.status === "Approved").length;
+  const overdueTotal = deliverableTracker.filter((item) => trackerDue(item).due === "overdue").length;
+  document.getElementById("tracker-summary").innerHTML = `
+    <span><strong>${deliverableTracker.length}</strong> deliverables</span>
+    <span><strong>${approvedTotal}</strong> approved</span>
+    <span class="${overdueTotal ? "waiting-tag" : ""}"><strong>${overdueTotal}</strong> overdue</span>
+    <span>${new Set(deliverableTracker.map((item) => item.tower)).size} towers · ${new Set(deliverableTracker.map((item) => item.floor)).size} floors · ${new Set(deliverableTracker.map((item) => item.stage)).size} stages · ${new Set(deliverableTracker.map((item) => item.department)).size} departments</span>
+    <span class="tracker-source">Source: ${escapeHtml(trackerSource)}</span>`;
+
+  renderTrackerFilters();
+  renderOverviewDisciplines();
 }
 
-/* PROJECT MENU ACTIONS: Add Deliverable / Create Transmittal / Add Member / Schedule Meeting */
-const disciplineOptions = ["Electrical", "Plumbing", "HVAC", "Fire", "Coordinated", "General"];
-const wingOptions = ["Wing 25", "Tower 16", "Tower 26", "MLCP", "UGT 2", "All Towers"];
-const consultantOptions = ["Verdant Systems", "Axis Structural", "Studio North", "TerraScope", "CivicLine Advisory"];
+// The overview's "Deliverables by discipline" panel and header metric come from the tracker
+const disciplineIcons = { Electrical: "ϟ", HVAC: "⌁", Mechanical: "⌁", Plumbing: "♨", "Fire Fighting": "♨", ELV: "◈", Coordinated: "◎" };
 
-function openAddDeliverableDialog(target) {
-  const inDashboard = target === "dashboard";
+function renderOverviewDisciplines() {
+  const departments = new Map();
+  deliverableTracker.forEach((item) => {
+    const entry = departments.get(item.department) || { done: 0, total: 0 };
+    entry.total += 1;
+    if (item.status === "Approved") entry.done += 1;
+    departments.set(item.department, entry);
+  });
+
+  document.getElementById("overview-discipline-list").innerHTML = [...departments.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5)
+    .map(([name, { done, total }]) => `
+      <div class="discipline-item">
+        <span class="discipline-icon">${disciplineIcons[name] || "◇"}</span><span class="discipline-name">${escapeHtml(name)}</span>
+        <span class="discipline-progress" role="img" aria-label="${done} of ${total} approved"><span style="width:${Math.round((done / total) * 100)}%"></span></span><span class="discipline-total"><strong>${done}</strong> /${total}</span>
+      </div>`).join("");
+
+  const approved = deliverableTracker.filter((item) => item.status === "Approved").length;
+  document.getElementById("overview-discipline-count").textContent = `${approved}/${deliverableTracker.length} approved`;
+  document.getElementById("metric-deliverables").textContent = deliverableTracker.length;
+  document.getElementById("metric-deliverables-overdue").textContent = deliverableTracker.filter((item) => trackerDue(item).due === "overdue").length;
+}
+
+document.querySelectorAll("[data-tracker-group]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    trackerGroupBy = chip.dataset.trackerGroup;
+    document.querySelectorAll("[data-tracker-group]").forEach((c) => {
+      c.classList.toggle("is-active", c === chip);
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    renderTracker();
+  });
+});
+
+trackerSearch.addEventListener("input", renderTracker);
+
+document.getElementById("tracker-filter-btn").addEventListener("click", (e) => {
+  const button = e.currentTarget;
+  const expanded = button.getAttribute("aria-expanded") === "true";
+  button.setAttribute("aria-expanded", String(!expanded));
+  document.getElementById("tracker-filters").hidden = expanded;
+});
+
+document.getElementById("tracker-filters").addEventListener("change", (e) => {
+  const select = e.target.closest("[data-tracker-filter]");
+  if (!select) return;
+  trackerFilters[select.dataset.trackerFilter] = select.value;
+  renderTracker();
+});
+
+document.getElementById("tracker-filters").addEventListener("click", (e) => {
+  if (!e.target.closest("[data-tracker-clear-filters]")) return;
+  Object.keys(trackerFilters).forEach((key) => { trackerFilters[key] = "all"; });
+  renderTracker();
+});
+
+document.getElementById("tracker-list").addEventListener("click", (e) => {
+  const toggle = e.target.closest("[data-tracker-toggle]");
+  if (!toggle) return;
+  const key = `${trackerGroupBy}:${toggle.dataset.trackerToggle}`;
+  if (collapsedTrackerGroups.has(key)) collapsedTrackerGroups.delete(key);
+  else collapsedTrackerGroups.add(key);
+  renderTracker();
+});
+
+/* TRACKER IMPORT (Excel / CSV) */
+// Header names people commonly use for each tracker column
+const trackerColumnAliases = {
+  docNo: ["doc no", "document no", "document number", "drawing no", "drawing number", "dwg no", "sheet no", "ref no", "reference no", "doc id", "number"],
+  title: ["document", "document name", "document title", "drawing", "drawing name", "drawing title", "deliverable", "deliverable name", "title", "description", "name"],
+  tower: ["tower", "wing", "building", "block", "tower wing"],
+  floor: ["floor", "level", "storey", "floor level", "floors"],
+  stage: ["stage", "design stage", "phase", "submission stage"],
+  department: ["department", "dept", "discipline", "service", "services", "trade"],
+  due: ["due", "due date", "target date", "planned date", "submission date", "target", "planned submission"],
+  status: ["status", "current status", "state"],
+  owner: ["owner", "responsible", "assigned to", "prepared by", "in charge"]
+};
+const trackerFieldLabels = { docNo: "Doc No.", title: "Document", tower: "Tower", floor: "Floor", stage: "Stage", department: "Department", due: "Due date", status: "Status", owner: "Owner" };
+const normalizeHeader = (header) => String(header ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+function matchTrackerColumns(headerRow) {
+  const headers = headerRow.map(normalizeHeader);
+  const mapping = {};
+  const used = new Set();
+  // Exact header matches first, then headers that contain a known name ("Drawing Title (Rev)")
+  [(header, alias) => header === alias, (header, alias) => alias.length > 3 && header.includes(alias)].forEach((test) => {
+    Object.entries(trackerColumnAliases).forEach(([field, aliases]) => {
+      if (mapping[field] !== undefined) return;
+      const index = headers.findIndex((header, i) => header && !used.has(i) && aliases.some((alias) => test(header, alias)));
+      if (index !== -1) {
+        mapping[field] = index;
+        used.add(index);
+      }
+    });
+  });
+  const unmatched = headerRow.filter((header, i) => String(header).trim() && !used.has(i)).map(String);
+  return { mapping, unmatched };
+}
+
+function parseCsv(text) {
+  const firstLine = text.split(/\r?\n/, 1)[0];
+  const delimiter = [",", ";", "\t"].sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
+  const rows = [];
+  let row = [];
+  let value = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') { value += '"'; i += 1; }
+      else if (char === '"') quoted = false;
+      else value += char;
+    } else if (char === '"') {
+      quoted = true;
+    } else if (char === delimiter) {
+      row.push(value);
+      value = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && text[i + 1] === "\n") i += 1;
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += char;
+    }
+  }
+  if (value || row.length) rows.push([...row, value]);
+  return rows;
+}
+
+let sheetJsPromise = null;
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  sheetJsPromise ||= new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    script.onload = () => resolve(window.XLSX);
+    script.onerror = () => {
+      sheetJsPromise = null;
+      script.remove();
+      reject(new Error("Couldn't load the Excel reader. Check your connection, or save the sheet as CSV and import that."));
+    };
+    document.head.append(script);
+  });
+  return sheetJsPromise;
+}
+
+async function readTrackerRows(file) {
+  const extension = file.name.split(".").pop().toLowerCase();
+  if (extension === "csv" || extension === "txt") return parseCsv(await file.text());
+  if (extension === "xlsx" || extension === "xls") {
+    const XLSX = await loadSheetJs();
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+    return XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: true, defval: "" });
+  }
+  throw new Error("Use an .xlsx, .xls or .csv file.");
+}
+
+function parseTrackerDate(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return toDateInput(value);
+  if (typeof value === "number" && value > 20000 && value < 80000) {
+    // Excel stores dates as day counts; read them as UTC so the local timezone cannot shift the day
+    const date = new Date(Math.round(value - 25569) * 86400000);
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+  }
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) return toDateInput(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  match = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/); // day-first, as used on Indian sites
+  if (match) {
+    const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
+    return toDateInput(new Date(year, Number(match[2]) - 1, Number(match[1])));
+  }
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? "" : toDateInput(parsed);
+}
+
+function normalizeTrackerStatus(value) {
+  const text = String(value ?? "").toLowerCase();
+  if (!text.trim()) return "Not Started";
+  if (/not\s*started|yet to|pending|to do|todo/.test(text)) return "Not Started";
+  if (/approv|complete|done|closed|issued for construction|accepted/.test(text)) return "Approved";
+  if (/review|comment/.test(text)) return "In Review";
+  if (/submit|issued/.test(text)) return "Submitted";
+  if (/hold/.test(text)) return "On Hold";
+  if (/progress|wip|ongoing|started|drafting/.test(text)) return "In Progress";
+  return "Not Started";
+}
+
+function normalizeStage(value) {
+  const text = String(value ?? "").trim();
+  const key = text.toLowerCase().replace(/[^a-z]/g, "");
+  const known = { sd: "Schematic Design", schematic: "Schematic Design", schematicdesign: "Schematic Design", dd: "Design Development", designdevelopment: "Design Development", gfc: "GFC", vfc: "VFC", tender: "Tender", concept: "Concept", conceptdesign: "Concept", asbuilt: "As-built" };
+  return known[key] || text || "Unassigned";
+}
+
+function normalizeDepartment(value) {
+  const text = String(value ?? "").trim();
+  const key = text.toLowerCase().replace(/[^a-z]/g, "");
+  const known = { el: "Electrical", ele: "Electrical", elec: "Electrical", electrical: "Electrical", ph: "Plumbing", phe: "Plumbing", plb: "Plumbing", plumbing: "Plumbing", hvac: "HVAC", mech: "HVAC", mechanical: "HVAC", ff: "Fire Fighting", fire: "Fire Fighting", fps: "Fire Fighting", firefighting: "Fire Fighting", elv: "ELV", coordinated: "Coordinated", coord: "Coordinated" };
+  return known[key] || text || "Unassigned";
+}
+
+function trackerItemsFromRows(rows) {
+  // The header may sit below a title block ("Project X - MEP Deliverables"), so take the row
+  // in the first 10 that matches the most column names and includes a document column
+  let headerIndex = -1;
+  let bestScore = 0;
+  rows.slice(0, 10).forEach((row, index) => {
+    const { mapping } = matchTrackerColumns(row);
+    const score = Object.keys(mapping).length;
+    if (mapping.title !== undefined && score > bestScore) {
+      headerIndex = index;
+      bestScore = score;
+    }
+  });
+  if (headerIndex === -1) {
+    throw new Error("Couldn't find a document name column. Add a header such as \"Document Name\" or \"Drawing Title\" — or start from the template.");
+  }
+  const { mapping, unmatched } = matchTrackerColumns(rows[headerIndex]);
+  const get = (row, field) => (mapping[field] === undefined ? "" : row[mapping[field]]);
+  const items = [];
+  let skipped = 0;
+
+  rows.slice(headerIndex + 1).forEach((row) => {
+    if (!row.some((value) => String(value).trim())) return; // blank line
+    const title = String(get(row, "title")).trim();
+    if (!title) {
+      skipped += 1;
+      return;
+    }
+    items.push({
+      docNo: String(get(row, "docNo")).trim() || `IMP-${String(items.length + 1).padStart(3, "0")}`,
+      title,
+      tower: String(get(row, "tower")).trim() || "Unassigned",
+      floor: String(get(row, "floor")).trim() || "Unassigned",
+      stage: normalizeStage(get(row, "stage")),
+      department: normalizeDepartment(get(row, "department")),
+      due: parseTrackerDate(get(row, "due")),
+      status: normalizeTrackerStatus(get(row, "status")),
+      owner: String(get(row, "owner")).trim()
+    });
+  });
+
+  return { items, skipped, matched: Object.keys(mapping).map((field) => trackerFieldLabels[field]), unmatched };
+}
+
+async function importTrackerFile(file, replace) {
+  try {
+    actionSubmit.disabled = true;
+    actionSubmit.textContent = "Reading file…";
+    const { items, skipped, matched, unmatched } = trackerItemsFromRows(await readTrackerRows(file));
+    if (!items.length) throw new Error("The file has a header row but no deliverables under it.");
+
+    deliverableTracker = replace ? items : [...deliverableTracker, ...items];
+    trackerSource = `${file.name} · imported ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+    Object.keys(trackerFilters).forEach((key) => { trackerFilters[key] = "all"; });
+    collapsedTrackerGroups.clear();
+    renderTracker();
+    prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} imported <b>${items.length} deliverables</b> from ${escapeHtml(file.name)}`, tag: "Tracker" });
+    closeActionDialog();
+
+    const count = (key) => new Set(items.map((item) => item[key])).size;
+    openActionDialog({
+      title: `Imported ${items.length} deliverable${items.length === 1 ? "" : "s"}`,
+      subtitle: file.name,
+      body: detailList([
+        ["Towers", String(count("tower"))],
+        ["Floors", String(count("floor"))],
+        ["Stages", String(count("stage"))],
+        ["Departments", String(count("department"))],
+        ["Columns read", matched.join(", ")],
+        ["Columns ignored", unmatched.join(", ")],
+        ["Rows skipped", skipped ? `${skipped} without a document name` : ""]
+      ]),
+      submitLabel: null,
+      cancelLabel: "View tracker"
+    });
+  } catch (error) {
+    setActionError(error.message);
+  } finally {
+    actionSubmit.disabled = false;
+    if (actionConfig) actionSubmit.textContent = actionConfig.submitLabel || "Save";
+  }
+}
+
+const trackerTemplate = [
+  ["Doc No", "Document Name", "Tower", "Floor", "Stage", "Department", "Due Date", "Status", "Owner"],
+  ["LB-EL-T26-101", "Electrical lighting layout", "Tower 26", "L1–L10", "GFC", "Electrical", daysFromNow(14), "In Progress", "Fatima Khan"],
+  ["LB-PH-T16-110", "Drainage calculations", "Tower 16", "Basement 1", "DD", "Plumbing", daysFromNow(21), "Not Started", "Riya Shah"],
+  ["LB-FF-UGT2-220", "Fire pump room layout", "UGT 2", "Basement 2", "VFC", "Fire Fighting", daysFromNow(-5), "Approved", "Apurva Bhadange"]
+];
+
+function openTrackerImportDialog() {
   openActionDialog({
-    title: "Add Deliverable",
-    subtitle: inDashboard ? "Adds to Project Deliverables on your dashboard" : overviewPage.querySelector(".project-title").textContent,
+    title: "Import deliverable tracker",
+    subtitle: overviewPage.querySelector(".project-title").textContent,
+    body: `
+      <p class="action-dialog-text">Upload the design deliverable list as Excel or CSV. Columns are matched by their header: a <b>Document / Drawing name</b> column is required; Doc No., Tower, Floor, Stage, Department, Due date, Status and Owner are read when present.</p>
+      <button class="comment-btn tracker-template-btn" type="button" data-tracker-template>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download CSV template
+      </button>`,
     fields: [
-      { name: "title", label: "Document name", required: true, placeholder: "e.g. Issue Revised Plumbing GFC" },
-      { type: "row", fields: [
-        { name: "discipline", label: "Discipline", type: "select", options: disciplineOptions },
-        { name: "priority", label: "Priority", type: "select", options: ["High", "Medium", "Low"], value: "Medium" }
-      ] },
-      { type: "row", fields: [
-        inDashboard
-          ? { name: "project", label: "Project", type: "select", options: ["Lodha One • Tower B", "Lodha Amara • Wing 25", "Palava • Phase 2", "Lodha Belmondo • Tower 26"] }
-          : { name: "wing", label: "Wing / Tower", type: "select", options: wingOptions },
-        { name: "due", label: "Due date", type: "date", required: true, value: toDateInput(new Date(Date.now() + 7 * 86400000)) }
-      ] }
+      { name: "file", label: "Tracker file (.xlsx, .xls, .csv)", type: "file", accept: ".xlsx,.xls,.csv" },
+      { name: "mode", label: "Import as", type: "select", options: ["Replace the current tracker", "Add to the current tracker"] }
     ],
-    submitLabel: "Add Deliverable",
+    submitLabel: "Import",
     onSubmit(values) {
-      if (inDashboard) addDashboardDeliverable(values);
-      else addProjectDeliverable(values);
-      showToast(`Deliverable "${values.title}" added.`);
+      if (!values.file) {
+        setActionError("Choose a file to import.");
+        return false;
+      }
+      importTrackerFile(values.file, values.mode.startsWith("Replace"));
+      return false; // the import closes the dialog once the file is read
     }
   });
 }
 
-const transmittalMetric = document.getElementById("metric-transmittals");
-const transmittalPendingMetric = document.getElementById("metric-transmittals-pending");
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-tracker-import]")) openTrackerImportDialog();
+  if (e.target.closest("[data-tracker-template]")) downloadText("deliverable-tracker-template.csv", toCsv(trackerTemplate));
+});
+
+/* PROJECT TRANSMITTALS */
+const transmittalStatuses = {
+  pending: { label: "Awaiting acknowledgement", cls: "pending" },
+  acknowledged: { label: "Acknowledged", cls: "completed" },
+  returned: { label: "Returned with comments", cls: "delayed" }
+};
+const transmittals = [
+  { no: "TR-001", docs: ["Concept MEP design report", "Terrace lightning protection layout"], to: "Verdant Systems", purpose: "For approval", sent: daysFromNow(-38), status: "acknowledged", by: "Apurva Bhadange", note: "Concept stage MEP report for consultant sign-off." },
+  { no: "TR-002", docs: ["Fire pump room layout", "Plumbing single line diagram R3"], to: "Verdant Systems", purpose: "For approval", sent: daysFromNow(-3), status: "pending", by: "Apurva Bhadange", note: "" }
+];
+let transmittalFilter = "all";
+const transmittalSearch = document.getElementById("transmittal-search");
+
+function renderTransmittals() {
+  const query = transmittalSearch.value.trim().toLocaleLowerCase();
+  const visible = transmittals
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => (transmittalFilter === "all" || item.status === transmittalFilter)
+      && `${item.no} ${item.docs.join(" ")} ${item.to} ${item.purpose}`.toLocaleLowerCase().includes(query))
+    .reverse();
+
+  document.getElementById("transmittal-list").innerHTML = visible.map(({ item, index }) => {
+    const status = transmittalStatuses[item.status];
+    const action = item.status === "pending"
+      ? oiAction("Remind")
+      : `<button class="comment-btn" type="button" data-row-action="open"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View</button>`;
+    return `
+      <tr class="project-task-row transmittal-row" data-transmittal-index="${index}" data-recipient="${escapeHtml(item.to)}" tabindex="0">
+        <td>${item.no}</td>
+        <td><strong>${escapeHtml(item.docs[0])}</strong><span class="row-subtitle">${item.docs.length > 1 ? `+ ${item.docs.length - 1} more document${item.docs.length > 2 ? "s" : ""}` : "1 document"}</span></td>
+        <td>${escapeHtml(item.to)}</td>
+        <td>${escapeHtml(item.purpose)}</td>
+        <td>${formatLongDate(item.sent)}</td>
+        <td><span class="task-state ${status.cls}">${status.label}</span></td>
+        <td>${action}</td>
+      </tr>`;
+  }).join("");
+  document.getElementById("transmittal-empty").hidden = visible.length !== 0;
+
+  document.getElementById("metric-transmittals").textContent = transmittals.length;
+  document.getElementById("metric-transmittals-pending").textContent = transmittals.filter((item) => item.status === "pending").length;
+}
+
+document.querySelectorAll("[data-transmittal-status]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    transmittalFilter = chip.dataset.transmittalStatus;
+    document.querySelectorAll("[data-transmittal-status]").forEach((c) => {
+      c.classList.toggle("is-active", c === chip);
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    renderTransmittals();
+  });
+});
+transmittalSearch.addEventListener("input", renderTransmittals);
+
+/* PROJECT MENU ACTIONS: Add Deliverable / Create Transmittal / Add Member / Schedule Meeting */
+const disciplineOptions = ["Electrical", "Plumbing", "HVAC", "Fire", "Coordinated", "General"];
+const consultantOptions = ["Verdant Systems", "Axis Structural", "Studio North", "TerraScope", "CivicLine Advisory"];
+const uniqueOptions = (defaults, key) => [...new Set([...defaults, ...deliverableTracker.map((item) => item[key])])].filter((value) => value && value !== "Unassigned");
+
+function openAddDeliverableDialog(target) {
+  if (target === "dashboard") {
+    openActionDialog({
+      title: "Add Deliverable",
+      subtitle: "Adds to Project Deliverables on your dashboard",
+      fields: [
+        { name: "title", label: "Document name", required: true, placeholder: "e.g. Issue Revised Plumbing GFC" },
+        { type: "row", fields: [
+          { name: "project", label: "Project", type: "select", options: ["Lodha One • Tower B", "Lodha Amara • Wing 25", "Palava • Phase 2", "Lodha Belmondo • Tower 26"] },
+          { name: "priority", label: "Priority", type: "select", options: ["High", "Medium", "Low"], value: "Medium" }
+        ] },
+        { name: "due", label: "Due date", type: "date", required: true, value: daysFromNow(7) }
+      ],
+      submitLabel: "Add Deliverable",
+      onSubmit(values) {
+        addDashboardDeliverable(values);
+        showToast(`Deliverable "${values.title}" added.`);
+      }
+    });
+    return;
+  }
+
+  openActionDialog({
+    title: "Add Deliverable",
+    subtitle: overviewPage.querySelector(".project-title").textContent,
+    fields: [
+      { type: "row", fields: [
+        { name: "title", label: "Document name", required: true, placeholder: "e.g. Riser shaft layout" },
+        { name: "docNo", label: "Doc No.", placeholder: "Optional" }
+      ] },
+      { type: "row", fields: [
+        { name: "tower", label: "Tower", type: "select", options: uniqueOptions(trackerTowers, "tower") },
+        { name: "floor", label: "Floor", type: "select", options: uniqueOptions(trackerFloors, "floor").sort(trackerGroupSort("floor")) }
+      ] },
+      { type: "row", fields: [
+        { name: "stage", label: "Stage", type: "select", options: uniqueOptions(trackerStages, "stage").sort(trackerGroupSort("stage")) },
+        { name: "department", label: "Department", type: "select", options: uniqueOptions(trackerDepartments, "department") }
+      ] },
+      { type: "row", fields: [
+        { name: "due", label: "Due date", type: "date", required: true, value: daysFromNow(14) },
+        { name: "owner", label: "Owner", type: "select", options: teamMembers.filter((member) => member.group === "mep").map((member) => member.name), value: profileState.name }
+      ] }
+    ],
+    submitLabel: "Add Deliverable",
+    onSubmit(values) {
+      deliverableTracker.unshift({ ...values, docNo: values.docNo || `LB-NEW-${String(deliverableTracker.length + 1).padStart(3, "0")}`, status: "Not Started" });
+      renderTracker();
+      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} added <b>${escapeHtml(values.title)}</b>`, tag: escapeHtml(values.tower) });
+      showToast(`Deliverable "${values.title}" added to ${values.tower} · ${values.floor}.`);
+    }
+  });
+}
 
 function openTransmittalDialog() {
-  const documents = projectDeliverablesConfig.rows.filter((r) => r.group !== "completed").map((r) => r.title);
+  const documents = deliverableTracker.filter((item) => item.status !== "Approved").map((item) => item.title);
   openActionDialog({
     title: "Create Transmittal",
     subtitle: overviewPage.querySelector(".project-title").textContent,
@@ -2750,7 +3364,7 @@ function openTransmittalDialog() {
         { name: "to", label: "To", type: "select", options: consultantOptions },
         { name: "purpose", label: "Purpose", type: "select", options: ["For approval", "For information", "For construction", "For tender"] }
       ] },
-      { name: "documents", label: "Documents", type: "checklist", required: true, options: documents.slice(0, 6) },
+      { name: "documents", label: "Documents", type: "checklist", required: true, options: documents.slice(0, 8) },
       { name: "note", label: "Cover note", type: "textarea", placeholder: "Anything the recipient should know..." }
     ],
     submitLabel: "Send Transmittal",
@@ -2759,10 +3373,9 @@ function openTransmittalDialog() {
         setActionError("Pick at least one document to send.");
         return false;
       }
-      const number = Number(transmittalMetric.textContent) + 1;
-      transmittalMetric.textContent = number;
-      transmittalPendingMetric.textContent = Number(transmittalPendingMetric.textContent) + 1;
-      const reference = `TR-${String(number).padStart(3, "0")}`;
+      const reference = `TR-${String(transmittals.length + 1).padStart(3, "0")}`;
+      transmittals.push({ no: reference, docs: values.documents, to: values.to, purpose: values.purpose, sent: toDateInput(new Date()), status: "pending", by: profileState.name, note: values.note });
+      renderTransmittals();
       prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} sent <b>${reference}</b> to ${escapeHtml(values.to)}`, tag: `${values.documents.length} docs` });
       showToast(`${reference} sent to ${values.to} ${values.purpose.toLowerCase()}.`);
     }
@@ -2777,19 +3390,27 @@ function openAddMemberDialog() {
       { name: "name", label: "Full name", required: true, placeholder: "e.g. Kavya Iyer" },
       { type: "row", fields: [
         { name: "role", label: "Role", placeholder: "e.g. Electrical Engineer", required: true },
-        { name: "discipline", label: "Discipline", type: "select", options: ["MEP", ...disciplineOptions] }
+        { name: "team", label: "Team", type: "select", options: teamGroups.map((group) => group.label) }
       ] },
-      { name: "org", label: "Organisation", type: "select", options: ["Lodha", ...consultantOptions] }
+      { type: "row", fields: [
+        { name: "discipline", label: "Discipline", type: "select", options: ["MEP", ...disciplineOptions, "Architecture", "Cost", "Construction"] },
+        { name: "org", label: "Organisation", type: "select", options: ["Lodha", ...consultantOptions] }
+      ] }
     ],
     submitLabel: "Add Member",
     onSubmit(values) {
-      teamMembers.push({ name: values.name, role: values.role, org: values.org, discipline: values.discipline, tasks: 0 });
+      const group = teamGroups.find((g) => g.label === values.team).key;
+      teamMembers.push({ name: values.name, role: values.role, org: values.org, discipline: values.discipline, group, tasks: 0 });
+      openTeamFolders.add(group);
       renderTeam();
-      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} added <b>${escapeHtml(values.name)}</b> to the team`, tag: escapeHtml(values.org) });
-      showToast(`${values.name} added to the project team.`);
+      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} added <b>${escapeHtml(values.name)}</b> to ${escapeHtml(values.team)}`, tag: escapeHtml(values.org) });
+      showToast(`${values.name} added to ${values.team}.`);
     }
   });
 }
+
+const parseGuestEmails = (text) => text.split(/[\s,;]+/).map((email) => email.trim()).filter(Boolean);
+const validEmail = (email) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 
 function openScheduleMeetingDialog() {
   const onProject = !overviewPage.hidden;
@@ -2806,10 +3427,11 @@ function openScheduleMeetingDialog() {
         { name: "start", label: "Start", type: "time", required: true, value: "15:00" },
         { name: "end", label: "End", type: "time", required: true, value: "16:00" }
       ] },
-      { type: "row", fields: [
-        { name: "place", label: "Location / link", placeholder: "Teams link or room" },
-        { name: "attendees", label: "Attendees", type: "number", min: 1, value: 4 }
-      ] }
+      { name: "place", label: "Location / link", placeholder: "Teams link or meeting room" },
+      { name: "people", label: "Invite people", type: "people" },
+      { name: "guests", label: "Guests outside Atelier", placeholder: "Emails, separated by commas" },
+      { name: "message", label: "Invite message", type: "textarea", placeholder: "Agenda or anything attendees should prepare..." },
+      { name: "send", label: "Send calendar invites now", type: "checkbox", value: true }
     ],
     submitLabel: "Schedule",
     onSubmit(values) {
@@ -2819,7 +3441,15 @@ function openScheduleMeetingDialog() {
         setActionError("End time must be after the start time.");
         return false;
       }
+      const guests = parseGuestEmails(values.guests);
+      const invalid = guests.filter((email) => !validEmail(email));
+      if (invalid.length) {
+        setActionError(`Check these guest emails: ${invalid.join(", ")}`);
+        return false;
+      }
+
       const online = values.type === "Online";
+      const invited = values.people.length + guests.length;
       meetings.push({
         id: `m${++meetingSeq}`,
         start,
@@ -2828,11 +3458,16 @@ function openScheduleMeetingDialog() {
         type: online ? "online" : "in-person",
         place: values.place || (online ? "Teams link" : "To be confirmed"),
         project: onProject ? overviewPage.querySelector(".project-title").textContent : "General",
-        attendees: Number(values.attendees) || 1,
+        attendees: invited + 1,
+        invitees: values.people,
+        guests,
         status: "join"
       });
       renderSchedule();
-      showToast(`"${values.title}" scheduled for ${start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} at ${values.start}.`);
+      const when = `${start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} at ${values.start}`;
+      showToast(values.send && invited
+        ? `"${values.title}" scheduled for ${when} · invites sent to ${invited} ${invited === 1 ? "person" : "people"}.`
+        : `"${values.title}" scheduled for ${when}.`);
     }
   });
 }
@@ -2966,64 +3601,120 @@ document.querySelectorAll("[data-file-type]").forEach((chip) => {
 });
 projectFileSearch.addEventListener("input", renderFiles);
 
-/* PROJECT TEAM */
-const teamMembers = [
-  { name: "Apurva Bhadange", role: "MEP Design Lead", org: "Lodha", discipline: "MEP", tasks: 6 },
-  { name: "Sachin Patil", role: "Project Manager", org: "Lodha", discipline: "General", tasks: 9 },
-  { name: "Priya Shah", role: "Senior Project Manager", org: "Lodha", discipline: "General", tasks: 4 },
-  { name: "Neha Kapoor", role: "Design Program Manager", org: "Lodha", discipline: "Coordinated", tasks: 3 },
-  { name: "Rohit Patil", role: "Site Engineer", org: "Lodha", discipline: "Fire", tasks: 5 },
-  { name: "Riya Shah", role: "MEP Designer", org: "Lodha", discipline: "Plumbing", tasks: 7 },
-  { name: "Arjun Mehta", role: "Project Manager · West", org: "Lodha", discipline: "General", tasks: 2 },
-  { name: "Fatima Khan", role: "Associate Project Manager", org: "Lodha", discipline: "Electrical", tasks: 3 },
-  { name: "Sanjay Rao", role: "Fire Consultant", org: "Verdant Systems", discipline: "Fire", tasks: 4 },
-  { name: "Rajesh K.", role: "Plumbing Consultant", org: "Verdant Systems", discipline: "Plumbing", tasks: 2 },
-  { name: "Meera Joshi", role: "HVAC Consultant", org: "Verdant Systems", discipline: "HVAC", tasks: 3 },
-  { name: "Karan Desai", role: "Electrical Consultant", org: "Verdant Systems", discipline: "Electrical", tasks: 1 }
+/* PROJECT TEAM: your MEP team up front, other teams in folders that open in place */
+const teamGroups = [
+  { key: "mep", label: "MEP Design", full: "MEP Design Team" },
+  { key: "architectural", label: "Architectural", full: "Architecture & interiors" },
+  { key: "dco", label: "DCO", full: "Design Cost Optimisation" },
+  { key: "site", label: "Site Team", full: "Construction Management" },
+  { key: "consultants", label: "Consultants", full: "External MEP consultants" }
 ];
-let teamFilter = "all";
+const folderIcon = '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M14.6673 12.6667C14.6673 13.0203 14.5268 13.3594 14.2768 13.6095C14.0267 13.8595 13.6876 14 13.334 14H2.66732C2.3137 14 1.97456 13.8595 1.72451 13.6095C1.47446 13.3594 1.33398 13.0203 1.33398 12.6667V3.33333C1.33398 2.97971 1.47446 2.64057 1.72451 2.39052C1.97456 2.14048 2.3137 2 2.66732 2H6.00065L7.33398 4H13.334C13.6876 4 14.0267 4.14048 14.2768 4.39052C14.5268 4.64057 14.6673 4.97971 14.6673 5.33333V12.6667Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const teamMembers = [
+  { name: "Apurva Bhadange", role: "MEP Design Lead", org: "Lodha", discipline: "MEP", group: "mep", tasks: 6 },
+  { name: "Riya Shah", role: "MEP Designer", org: "Lodha", discipline: "Plumbing", group: "mep", tasks: 7 },
+  { name: "Fatima Khan", role: "Electrical Design Engineer", org: "Lodha", discipline: "Electrical", group: "mep", tasks: 3 },
+  { name: "Neha Kapoor", role: "HVAC Design Engineer", org: "Lodha", discipline: "HVAC", group: "mep", tasks: 4 },
+  { name: "Ananya Rao", role: "Lead Architect", org: "Lodha", discipline: "Architecture", group: "architectural", tasks: 5 },
+  { name: "Vikram Sethi", role: "Facade Architect", org: "Lodha", discipline: "Architecture", group: "architectural", tasks: 2 },
+  { name: "Priya Shah", role: "Design Program Manager", org: "Lodha", discipline: "Coordinated", group: "architectural", tasks: 4 },
+  { name: "Arjun Mehta", role: "DCO Lead", org: "Lodha", discipline: "Cost", group: "dco", tasks: 2 },
+  { name: "Kavita Nair", role: "Cost Analyst", org: "Lodha", discipline: "Cost", group: "dco", tasks: 3 },
+  { name: "Sachin Patil", role: "Project Manager", org: "Lodha", discipline: "Construction", group: "site", tasks: 9 },
+  { name: "Rohit Patil", role: "Site Engineer", org: "Lodha", discipline: "Fire", group: "site", tasks: 5 },
+  { name: "Imran Shaikh", role: "MEP Site Engineer", org: "Lodha", discipline: "Electrical", group: "site", tasks: 4 },
+  { name: "Sanjay Rao", role: "Fire Consultant", org: "Verdant Systems", discipline: "Fire", group: "consultants", tasks: 4 },
+  { name: "Rajesh K.", role: "Plumbing Consultant", org: "Verdant Systems", discipline: "Plumbing", group: "consultants", tasks: 2 },
+  { name: "Meera Joshi", role: "HVAC Consultant", org: "Verdant Systems", discipline: "HVAC", group: "consultants", tasks: 3 },
+  { name: "Karan Desai", role: "Electrical Consultant", org: "Verdant Systems", discipline: "Electrical", group: "consultants", tasks: 1 }
+];
+const openTeamFolders = new Set();
 const teamSearch = document.getElementById("project-team-search");
+const teamExpandAll = document.getElementById("team-expand-all");
+
+const teamCardHtml = (member) => `
+  <article class="team-card">
+    <span class="activity-avatar team-avatar">${escapeHtml(initialsOf(member.name))}</span>
+    <div class="team-card-copy">
+      <strong>${escapeHtml(member.name)}</strong>
+      <span>${escapeHtml(member.role)}</span>
+    </div>
+    <div class="team-card-tags">
+      <span class="activity-tag">${escapeHtml(member.org)}</span>
+      <span class="activity-tag">${escapeHtml(member.discipline)}</span>
+    </div>
+    <footer class="team-card-footer">
+      <small><strong>${member.tasks}</strong> open tasks</small>
+      <button class="comment-btn" type="button" data-assign-to="${escapeHtml(member.name)}">Assign Task</button>
+    </footer>
+  </article>`;
 
 function renderTeam() {
   const query = teamSearch.value.trim().toLocaleLowerCase();
-  const visible = teamMembers.filter((member) => {
-    const internal = member.org === "Lodha";
-    const orgOk = teamFilter === "all" || (teamFilter === "internal" ? internal : !internal);
-    return orgOk && `${member.name} ${member.role} ${member.org} ${member.discipline}`.toLocaleLowerCase().includes(query);
-  });
+  const matches = (member, group) => `${member.name} ${member.role} ${member.org} ${member.discipline} ${group.label} ${group.full}`.toLocaleLowerCase().includes(query);
+  let shown = 0;
 
-  document.getElementById("project-team-grid").innerHTML = visible.map((member) => `
-    <article class="team-card">
-      <span class="activity-avatar team-avatar">${escapeHtml(initialsOf(member.name))}</span>
-      <div class="team-card-copy">
-        <strong>${escapeHtml(member.name)}</strong>
-        <span>${escapeHtml(member.role)}</span>
-      </div>
-      <div class="team-card-tags">
-        <span class="activity-tag">${escapeHtml(member.org)}</span>
-        <span class="activity-tag">${escapeHtml(member.discipline)}</span>
-      </div>
-      <footer class="team-card-footer">
-        <small><strong>${member.tasks}</strong> open tasks</small>
-        <button class="comment-btn" type="button" data-assign-to="${escapeHtml(member.name)}">Assign Task</button>
-      </footer>
-    </article>`).join("");
-  document.getElementById("project-team-empty").hidden = visible.length !== 0;
+  const mepGroup = teamGroups[0];
+  const mep = teamMembers.filter((member) => member.group === mepGroup.key && matches(member, mepGroup));
+  document.getElementById("team-mep-grid").innerHTML = mep.map(teamCardHtml).join("");
+  document.getElementById("team-mep-count").textContent = String(mep.length).padStart(2, "0");
+  document.getElementById("team-mep-grid").closest(".team-section").hidden = Boolean(query) && !mep.length;
+  shown += mep.length;
+
+  const folders = teamGroups.slice(1).map((group) => {
+    const all = teamMembers.filter((member) => member.group === group.key);
+    const members = all.filter((member) => matches(member, group));
+    if (query && !members.length) return "";
+    shown += members.length;
+    // A search opens every folder with a match so results are never hidden behind a click
+    const open = openTeamFolders.has(group.key) || Boolean(query);
+    const preview = all.slice(0, 4).map((member) => `<i>${escapeHtml(initialsOf(member.name))}</i>`).join("");
+    return `
+      <section class="team-folder${open ? " is-open" : ""}">
+        <button class="team-folder-head" type="button" data-team-folder="${group.key}" aria-expanded="${open}" aria-controls="team-folder-${group.key}">
+          <span class="team-folder-icon">${folderIcon}</span>
+          <span class="team-folder-copy"><strong>${escapeHtml(group.label)}</strong><small>${escapeHtml(group.full)}</small></span>
+          <span class="team-folder-avatars" aria-hidden="true">${preview}${all.length > 4 ? `<i>+${all.length - 4}</i>` : ""}</span>
+          <span class="team-folder-count">${query ? `${members.length} of ${all.length}` : `${all.length} ${all.length === 1 ? "member" : "members"}`}</span>
+          <span class="task-group-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="team-grid team-folder-body" id="team-folder-${group.key}"${open ? "" : " hidden"}>
+          ${members.length ? members.map(teamCardHtml).join("") : '<p class="pref-hint">No one in this team yet. Use Add Member to add someone.</p>'}
+        </div>
+      </section>`;
+  }).join("");
+  document.getElementById("team-folders").innerHTML = folders;
+  document.getElementById("team-folders").closest(".team-section").hidden = !folders.trim();
+  document.getElementById("project-team-empty").hidden = shown !== 0;
+
+  const allOpen = teamGroups.slice(1).every((group) => openTeamFolders.has(group.key));
+  teamExpandAll.textContent = allOpen ? "Collapse all teams" : "Expand all teams";
+  teamExpandAll.setAttribute("aria-pressed", String(allOpen));
 
   document.getElementById("metric-team").textContent = teamMembers.length;
   document.getElementById("metric-firms").textContent = new Set(teamMembers.map((member) => member.org)).size;
 }
 
-document.querySelectorAll("[data-team-filter]").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    teamFilter = chip.dataset.teamFilter;
-    document.querySelectorAll("[data-team-filter]").forEach((c) => {
-      c.classList.toggle("is-active", c === chip);
-      c.setAttribute("aria-pressed", String(c === chip));
-    });
-    renderTeam();
-  });
+document.getElementById("team-folders").addEventListener("click", (e) => {
+  const head = e.target.closest("[data-team-folder]");
+  if (!head) return;
+  const key = head.dataset.teamFolder;
+  if (openTeamFolders.has(key)) openTeamFolders.delete(key);
+  else openTeamFolders.add(key);
+  renderTeam();
+  document.querySelector(`[data-team-folder="${key}"]`).focus();
 });
+
+teamExpandAll.addEventListener("click", () => {
+  const allOpen = teamGroups.slice(1).every((group) => openTeamFolders.has(group.key));
+  teamGroups.slice(1).forEach((group) => {
+    if (allOpen) openTeamFolders.delete(group.key);
+    else openTeamFolders.add(group.key);
+  });
+  renderTeam();
+});
+
 teamSearch.addEventListener("input", renderTeam);
 
 document.addEventListener("click", (e) => {
@@ -4081,6 +4772,357 @@ signedOutScreen.querySelector("[data-sign-in]").addEventListener("click", () => 
   showToast(`Welcome back, ${firstName(profileState.name)}.`);
 });
 
+/* DETAILS DRAWER: RFIs, deliverables and transmittals (same layout as the task drawer) */
+const recordBackdrop = document.getElementById("record-drawer-backdrop");
+const recordBody = document.getElementById("record-drawer-body");
+const recordAttachmentInput = document.getElementById("record-attachment-input");
+const dashboardRecords = new WeakMap(); // rows that only exist in the HTML get a record the first time they open
+let recordCtx = null;
+
+const recordSelect = (name, options, value) => `
+  <span class="drawer-control">
+    <select data-record-field="${name}" aria-label="${name}">
+      ${[...new Set([value, ...options].filter(Boolean))].map((option) => `<option${option === value ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+    </select>
+    <span class="drawer-chevron" aria-hidden="true"></span>
+  </span>`;
+const recordReadonly = (value) => `<span class="drawer-control drawer-readonly">${escapeHtml(value || "—")}</span>`;
+const recordDetail = (label, control) => `<div class="drawer-detail"><span>${label}</span>${control}</div>`;
+
+function recordChips(items, emptyText) {
+  return items.length
+    ? items.map((item) => `<div class="drawer-item-chip"><span>${escapeHtml(item)}</span></div>`).join("")
+    : `<p class="drawer-empty">${emptyText}</p>`;
+}
+
+function recordThread(thread, emptyText) {
+  return thread.length
+    ? thread.map((entry) => `<div class="drawer-comment"><strong>${escapeHtml(entry.by)}</strong> <small>${escapeHtml(entry.when)}</small><p>${escapeHtml(entry.text)}</p></div>`).join("")
+    : `<p class="drawer-empty">${emptyText}</p>`;
+}
+
+function recordSections(data, { threadTitle = "Comments", threadEmpty = "No comments yet.", placeholder = "Add a comment..." } = {}) {
+  return `
+    <section class="drawer-section">
+      <h4>Attachments</h4>
+      <div class="drawer-item-list">${recordChips(data.attachments, "No attachments.")}</div>
+      <button class="drawer-add-action" type="button" data-record-attach>+ Add attachment</button>
+    </section>
+    <section class="drawer-section">
+      <h4>${threadTitle}</h4>
+      <div class="drawer-comments">${recordThread(data.thread, threadEmpty)}</div>
+      <form class="drawer-comment-form" data-record-thread>
+        <input type="text" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off">
+        <button type="submit" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+    </section>
+    <section class="drawer-section">
+      <h4>Activity</h4>
+      <div class="drawer-activity-list">${data.activity.map((entry) => `<p class="drawer-activity-item">${escapeHtml(entry)}</p>`).join("")}</div>
+    </section>`;
+}
+
+function openRecordDrawer(ctx) {
+  recordCtx = ctx;
+  document.getElementById("record-drawer-heading").textContent = ctx.heading;
+  recordBody.innerHTML = ctx.render();
+  enhanceDateInputs(recordBody);
+  recordBody.scrollTop = 0;
+  recordBackdrop.hidden = false;
+  document.body.classList.add("project-dialog-open");
+  recordBackdrop.querySelector(".drawer-close").focus();
+}
+
+function rerenderRecordDrawer() {
+  const scroll = recordBody.scrollTop;
+  recordBody.innerHTML = recordCtx.render();
+  enhanceDateInputs(recordBody);
+  recordBody.scrollTop = scroll;
+}
+
+function closeRecordDrawer() {
+  if (recordBackdrop.hidden) return;
+  recordBackdrop.hidden = true;
+  recordCtx = null;
+  if (actionBackdrop.hidden) document.body.classList.remove("project-dialog-open");
+}
+
+/* RFI details */
+function rfiDataForRow(row) {
+  if (row.dataset.rfiIndex !== undefined) return rfiData[Number(row.dataset.rfiIndex)];
+  if (row.matches("[data-oi-row]")) return openItemsConfig.rfis.rows[Number(row.dataset.oiIndex)];
+  if (!dashboardRecords.has(row)) {
+    const cells = Array.from(row.cells, (cell) => cell.textContent.trim());
+    dashboardRecords.set(row, {
+      id: cells[0], query: rowTitle(row), wing: cells[2], impact: cells[3], discipline: cells[4], by: cells[5],
+      blocking: Boolean(row.querySelector(".badge.blocking")), received: "2h ago", files: 2
+    });
+  }
+  return dashboardRecords.get(row);
+}
+
+function openRfiDrawer(row) {
+  const data = rfiDataForRow(row);
+  const closed = () => data.status === "completed" || data.group === "completed";
+  data.attachments ||= Array.from({ length: data.files || 0 }, (_, i) => `${data.id}_markup_${i + 1}.pdf`);
+  data.thread ||= [];
+  data.activity ||= [`Raised by ${data.by}${data.received ? ` · ${data.received}` : ""}`];
+
+  openRecordDrawer({
+    data,
+    heading: "RFI Details",
+    render() {
+      const status = closed() ? "Closed" : data.answered ? "Answered" : "Open";
+      return `
+        <p class="drawer-meta">${escapeHtml(data.id)} · ${escapeHtml(data.wing)} · Raised by ${escapeHtml(data.by)}</p>
+        <h3 class="drawer-title">${escapeHtml(data.query)} ${data.blocking && !closed() ? '<span class="badge blocking">Blocking</span>' : ""}</h3>
+        <p class="drawer-description">${escapeHtml(data.description || `Clarification requested for ${data.wing}: ${data.query}.${data.blocking ? " Work on this package is on hold until it's answered." : ""}`)}</p>
+        <div class="drawer-detail-grid">
+          ${recordDetail("Status", recordSelect("status", ["Open", "Answered", "Closed"], status))}
+          ${recordDetail("Impact", recordSelect("impact", ["None", "Cost", "Time", "Cost & Time"], data.impact))}
+          ${recordDetail("Discipline", recordSelect("discipline", ["Electrical", "Plumbing", "HVAC", "Firefighting"], data.discipline || data.disc))}
+          ${recordDetail("Received", recordReadonly(data.received || "—"))}
+        </div>
+        ${recordSections(data, { threadTitle: "Responses", threadEmpty: "No responses yet.", placeholder: "Write a response..." })}`;
+    },
+    onThread() {
+      data.answered = true;
+      return `Response posted by ${profileState.name}`;
+    },
+    save(values) {
+      const changes = [];
+      if (values.impact !== data.impact) changes.push(`Impact changed to ${values.impact}`);
+      if (values.discipline !== (data.discipline || data.disc)) changes.push(`Discipline changed to ${values.discipline}`);
+      data.impact = values.impact;
+      if ("disc" in data) data.disc = values.discipline;
+      else data.discipline = values.discipline;
+      data.answered = values.status !== "Open";
+      if (changes.length) data.activity.push(changes.join(" · "));
+
+      if (values.status === "Closed" && !closed()) {
+        data.activity.push(`Closed by ${profileState.name}`);
+        closeRfi(row);
+        return `${data.id} closed.`;
+      }
+      if (row.dataset.rfiIndex !== undefined) renderRfis();
+      else if (row.matches("[data-oi-row]")) buildOpenItemsPanel("rfis");
+      else {
+        row.cells[3].textContent = values.impact;
+        row.cells[4].textContent = values.discipline;
+      }
+      return `${data.id} updated.`;
+    }
+  });
+}
+
+/* Deliverable details */
+function deliverableDataForRow(row) {
+  if (row.dataset.trackerIndex !== undefined) return { source: "tracker", data: deliverableTracker[Number(row.dataset.trackerIndex)] };
+  if (row.matches("[data-oi-row]")) return { source: "open-items", data: openItemsConfig.deliverables.rows[Number(row.dataset.oiIndex)] };
+  if (!dashboardRecords.has(row)) {
+    dashboardRecords.set(row, {
+      title: rowTitle(row),
+      project: row.cells[2].textContent.trim(),
+      status: row.querySelector(".task-state")?.textContent.trim() || "Not Started",
+      dueLabel: rowDueStatus(row)?.textContent.trim() || "",
+      waiting: row.querySelector(".waiting-tag")?.textContent.replace(/^[\s\S]*Waiting on\s*/i, "").trim(),
+      priority: rowPriorityBadge(row)?.textContent.trim()
+    });
+  }
+  return { source: "dashboard", data: dashboardRecords.get(row) };
+}
+
+function openDeliverableDrawer(row) {
+  const { source, data } = deliverableDataForRow(row);
+  const inTracker = source === "tracker";
+  const status = () => data.status || data.stateLabel || "Not Started";
+  data.attachments ||= inTracker && data.status !== "Not Started" ? [`${data.docNo}_${data.stage.replace(/\s+/g, "")}.pdf`] : [];
+  data.thread ||= [];
+  data.activity ||= [inTracker ? `Added to tracker · owner ${data.owner || "unassigned"}` : "Deliverable created"];
+
+  openRecordDrawer({
+    data,
+    heading: "Deliverable Details",
+    render() {
+      const meta = inTracker
+        ? `${data.docNo} · ${data.tower} · ${data.floor}`
+        : `${data.project || ""}${data.sub ? ` · ${data.sub}` : ""}`;
+      const dueValue = data.due && /^\d{4}-/.test(data.due) ? data.due : "";
+      const grid = inTracker
+        ? `
+          ${recordDetail("Status", recordSelect("status", trackerStatuses, status()))}
+          ${recordDetail("Due date", `<span class="drawer-control date-control"><input type="date" data-record-field="due" value="${dueValue}" aria-label="Due date"></span>`)}
+          ${recordDetail("Stage", recordSelect("stage", uniqueOptions(trackerStages, "stage"), data.stage))}
+          ${recordDetail("Department", recordSelect("department", uniqueOptions(trackerDepartments, "department"), data.department))}
+          ${recordDetail("Tower", recordSelect("tower", uniqueOptions(trackerTowers, "tower"), data.tower))}
+          ${recordDetail("Floor", recordSelect("floor", uniqueOptions(trackerFloors, "floor").sort(trackerGroupSort("floor")), data.floor))}
+          ${recordDetail("Owner", recordSelect("owner", teamMembers.filter((m) => m.group === "mep").map((m) => m.name), data.owner))}`
+        : `
+          ${recordDetail("Status", recordSelect("status", [...trackerStatuses, "Delayed"], status()))}
+          ${recordDetail("Due date", `<span class="drawer-control date-control"><input type="date" data-record-field="due" value="${dueValue}" aria-label="Due date"></span>`)}
+          ${recordDetail("Currently", recordReadonly(data.dueLabel || "—"))}
+          ${recordDetail("Priority", recordReadonly(data.priority))}`;
+      return `
+        <p class="drawer-meta">${escapeHtml(meta)}</p>
+        <h3 class="drawer-title">${escapeHtml(data.title.replace(/<[^>]+>/g, ""))}</h3>
+        ${data.waiting ? `<p class="drawer-description"><span class="waiting-tag">Waiting on ${escapeHtml(data.waiting.replace(/<[^>]+>/g, ""))}</span> — use Remind on the list to nudge them.</p>` : ""}
+        <div class="drawer-detail-grid">${grid}</div>
+        ${recordSections(data)}`;
+    },
+    save(values) {
+      const changes = [];
+      if (values.status !== status()) changes.push(`Status changed to ${values.status}`);
+      if (values.due && values.due !== data.due) changes.push(`Due date set to ${formatLongDate(values.due)}`);
+
+      if (inTracker) {
+        ["stage", "department", "tower", "floor", "owner"].forEach((key) => {
+          if (values[key] !== data[key]) changes.push(`${trackerFieldLabels[key]} changed to ${values[key]}`);
+        });
+        Object.assign(data, { status: values.status, due: values.due || data.due, stage: values.stage, department: values.department, tower: values.tower, floor: values.floor, owner: values.owner });
+        if (changes.length) data.activity.push(changes.join(" · "));
+        renderTracker();
+        return `${data.docNo} updated.`;
+      }
+
+      const due = values.due ? dueInfo(values.due) : null;
+      if (changes.length) data.activity.push(changes.join(" · "));
+      if (source === "open-items") {
+        data.stateLabel = values.status;
+        data.state = deliverableStateClass[values.status] || "pending";
+        if (due) Object.assign(data, { due: due.due, dueLabel: due.label });
+        data.group = values.status === "Approved" ? "completed" : data.group === "completed" ? "pending" : data.group;
+        buildOpenItemsPanel("deliverables");
+      } else {
+        data.status = values.status;
+        const chip = row.querySelector(".task-state");
+        chip.className = `task-state ${deliverableStateClass[values.status] || "pending"}`;
+        chip.textContent = values.status;
+        if (due) {
+          data.due = values.due;
+          data.dueLabel = due.label;
+          const dueChip = rowDueStatus(row);
+          dueChip.className = `status ${due.cls}`;
+          dueChip.textContent = due.label;
+        }
+        const checkbox = row.querySelector(".task-checkbox");
+        if (checkbox.checked !== (values.status === "Approved")) {
+          checkbox.checked = values.status === "Approved";
+          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+      return "Deliverable updated.";
+    }
+  });
+}
+
+/* Transmittal details */
+function openTransmittalDrawer(row) {
+  const data = transmittals[Number(row.dataset.transmittalIndex)];
+  data.attachments ||= data.docs.map((doc) => `${doc.replace(/[^\w]+/g, "_")}.pdf`);
+  data.thread ||= [];
+  data.activity ||= [`Sent to ${data.to} by ${data.by}`];
+  const statusLabels = Object.fromEntries(Object.entries(transmittalStatuses).map(([key, value]) => [value.label, key]));
+
+  openRecordDrawer({
+    data,
+    heading: "Transmittal Details",
+    render() {
+      return `
+        <p class="drawer-meta">${escapeHtml(data.no)} · Sent ${formatLongDate(data.sent)} by ${escapeHtml(data.by)}</p>
+        <h3 class="drawer-title">${data.docs.length} document${data.docs.length === 1 ? "" : "s"} to ${escapeHtml(data.to)}</h3>
+        <p class="drawer-description">${escapeHtml(data.note || "No cover note.")}</p>
+        <div class="drawer-detail-grid">
+          ${recordDetail("Status", recordSelect("status", Object.keys(statusLabels), transmittalStatuses[data.status].label))}
+          ${recordDetail("Purpose", recordSelect("purpose", ["For approval", "For information", "For construction", "For tender"], data.purpose))}
+          ${recordDetail("Recipient", recordReadonly(data.to))}
+          ${recordDetail("Documents", recordReadonly(String(data.docs.length)))}
+        </div>
+        <section class="drawer-section">
+          <h4>Documents</h4>
+          <div class="drawer-item-list">${recordChips(data.docs, "No documents.")}</div>
+        </section>
+        ${recordSections(data, { threadTitle: "Correspondence", threadEmpty: "No replies yet.", placeholder: "Add a note or reply..." })}`;
+    },
+    save(values) {
+      const status = statusLabels[values.status];
+      if (status !== data.status) data.activity.push(`Marked ${values.status.toLowerCase()} by ${profileState.name}`);
+      if (values.purpose !== data.purpose) data.activity.push(`Purpose changed to ${values.purpose.toLowerCase()}`);
+      data.status = status;
+      data.purpose = values.purpose;
+      renderTransmittals();
+      return `${data.no} updated.`;
+    }
+  });
+}
+
+function openRecordForRow(row) {
+  if (row.matches("#rfiTable tbody tr, #project-rfi-list tr[data-rfi-index], [data-open-panel='rfis'] tr[data-oi-row]")) openRfiDrawer(row);
+  else if (row.matches("#deliverables-table tbody tr, #tracker-list tr[data-tracker-index], [data-open-panel='deliverables'] tr[data-oi-row]")) openDeliverableDrawer(row);
+  else if (row.matches("#transmittal-list tr[data-transmittal-index]")) openTransmittalDrawer(row);
+}
+
+// Clicking a row (not its buttons or checkbox) opens its details
+document.addEventListener("click", (e) => {
+  if (e.target.closest("button, a, input, select, label, .custom-checkbox")) return;
+  const row = e.target.closest("tbody tr");
+  if (row) openRecordForRow(row);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || !e.target.matches("tr[data-tracker-index], tr[data-transmittal-index]")) return;
+  e.preventDefault();
+  openRecordForRow(e.target);
+});
+
+recordBackdrop.addEventListener("click", (e) => {
+  if (e.target === recordBackdrop || e.target.closest("[data-close-record-drawer]")) {
+    closeRecordDrawer();
+    return;
+  }
+
+  if (e.target.closest("[data-record-attach]")) {
+    recordAttachmentInput.click();
+    return;
+  }
+
+  if (e.target.closest("[data-record-save]") && recordCtx) {
+    const values = Object.fromEntries(Array.from(recordBody.querySelectorAll("[data-record-field]"), (field) => [field.dataset.recordField, field.value]));
+    const message = recordCtx.save(values);
+    closeRecordDrawer();
+    showToast(message);
+  }
+});
+
+recordBody.addEventListener("submit", (e) => {
+  const form = e.target.closest("[data-record-thread]");
+  if (!form || !recordCtx) return;
+  e.preventDefault();
+  const input = form.querySelector("input");
+  const text = input.value.trim();
+  if (!text) return;
+  // The thread lives on the record, so it is still there next time the drawer opens
+  const { data } = recordCtx;
+  data.thread.push({ by: profileState.name, when: "Just now", text });
+  data.activity.push(recordCtx.onThread ? recordCtx.onThread() : `Comment added by ${profileState.name}`);
+  rerenderRecordDrawer();
+  recordBody.querySelector("[data-record-thread] input").focus();
+});
+
+recordAttachmentInput.addEventListener("change", () => {
+  if (!recordCtx) return;
+  const names = Array.from(recordAttachmentInput.files, (file) => file.name);
+  recordCtx.data.attachments.push(...names);
+  names.forEach((name) => recordCtx.data.activity.push(`Attachment added: ${name}`));
+  recordAttachmentInput.value = "";
+  rerenderRecordDrawer();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !recordBackdrop.hidden && actionBackdrop.hidden) closeRecordDrawer();
+});
+
 /* RIGHT RAIL DATE */
 function renderRailDate() {
   const now = new Date();
@@ -4091,6 +5133,7 @@ function renderRailDate() {
 }
 
 /* INITIAL RENDER */
+enhanceDateInputs();
 renderRailDate();
 applyProfile();
 renderPrefs();
@@ -4098,7 +5141,8 @@ renderFiles();
 renderTeam();
 renderMilestones();
 renderActivity();
-buildProjectDeliverables();
+renderTracker();
+renderTransmittals();
 renderNotifications();
 renderSchedule();
 updateFocusCounts();

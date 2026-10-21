@@ -7325,3 +7325,379 @@ kbd {
     grid-template-columns: 1fr;
   }
 }
+
+/*DELIVERABLE TRACKER*/
+.toolbar-label {
+  margin-right: 2px;
+  color: var(--light-black);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filter-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--secondary-actions);
+  color: #ffffff;
+  font-size: 11px;
+}
+
+.filter-count[hidden] {
+  display: none;
+}
+
+.task-advanced-filters.tracker-filters {
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  min-width: 340px;
+  gap: 10px 12px;
+}
+
+.tracker-filter {
+  display: grid;
+  gap: 5px;
+}
+
+.tracker-clear {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-left: 0;
+  font-size: 12px;
+}
+
+.tracker-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: var(--medium-black);
+  font-size: 13px;
+}
+
+.tracker-summary strong {
+  color: var(--black);
+}
+
+.tracker-source {
+  margin-left: auto;
+  color: var(--grey);
+}
+
+.tracker-group-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  color: var(--light-black);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tracker-group-meta .status {
+  padding: 0;
+  font-size: 12px;
+}
+
+.tracker-group-meta .report-meter {
+  width: 64px;
+}
+
+.tracker-row.is-approved td {
+  color: var(--light-black);
+}
+
+.tracker-template-btn {
+  justify-self: start;
+}
+
+/* Rows that open a details drawer */
+.tracker-table .project-task-row,
+.transmittal-table .project-task-row,
+#project-rfi-list .project-task-row,
+[data-open-panel="rfis"] .project-task-row,
+[data-open-panel="deliverables"] .project-task-row,
+#rfiTable tbody tr,
+#deliverables-table tbody tr {
+  cursor: pointer;
+}
+
+.tracker-table .project-task-row:hover td,
+.transmittal-table .project-task-row:hover td,
+#project-rfi-list .project-task-row:hover td,
+[data-open-panel="rfis"] .project-task-row:hover td,
+[data-open-panel="deliverables"] .project-task-row:hover td,
+#rfiTable tbody tr:hover td,
+#deliverables-table tbody tr:hover td {
+  background: #fffaf7;
+}
+
+.tracker-table tr:focus-visible,
+.transmittal-table tr:focus-visible {
+  outline: 2px solid var(--primary-action-muted);
+  outline-offset: -2px;
+}
+
+/*TEAM SECTIONS + FOLDERS*/
+.team-section[hidden] {
+  display: none;
+}
+
+.team-section + .team-section {
+  margin-top: 10px;
+}
+
+.team-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.team-section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--black);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.team-search {
+  width: min(380px, 45%);
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.team-folders {
+  display: grid;
+  gap: 12px;
+}
+
+.team-folder {
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.team-folder.is-open {
+  border-color: #d9c4b9;
+}
+
+.team-folder-head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  font-family: var(--font-body);
+  text-align: left;
+}
+
+.team-folder-head:hover {
+  background: var(--main-bg);
+}
+
+.team-folder-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--main-bg);
+  color: var(--dark-brown);
+}
+
+.team-folder-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.team-folder-copy strong {
+  color: var(--black);
+  font-size: 15px;
+}
+
+.team-folder-copy small {
+  color: var(--light-black);
+  font-size: 13px;
+}
+
+.team-folder-avatars {
+  display: flex;
+  margin-left: auto;
+  padding-left: 6px;
+}
+
+.team-folder-avatars i {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  margin-left: -6px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: #846555;
+  color: #ffffff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.team-folder-avatars i:nth-child(2) { background: #a77b68; }
+.team-folder-avatars i:nth-child(3) { background: #b4a194; }
+.team-folder-avatars i:nth-child(4) { background: #92786c; }
+.team-folder-avatars i:nth-child(5) { background: var(--main-bg); color: var(--dark-brown); }
+
+.team-folder-count {
+  min-width: 84px;
+  color: var(--medium-black);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.team-folder-head[aria-expanded="false"] .task-group-chevron::before {
+  transform: translateY(-1px) rotate(225deg);
+}
+
+.team-folder-body {
+  padding: 4px 16px 16px;
+}
+
+.team-folder-body[hidden] {
+  display: none;
+}
+
+/*PEOPLE PICKER (meeting invites)*/
+.people-field {
+  gap: 8px;
+}
+
+.people-field legend {
+  margin-bottom: 8px;
+  color: var(--black);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.people-search {
+  min-height: 40px;
+}
+
+.task-dialog .form-field .people-search input {
+  height: 38px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.people-list {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 2px 12px 8px;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+}
+
+.people-group[hidden],
+.people-option[hidden] {
+  display: none;
+}
+
+.people-group-title {
+  padding: 10px 0 4px;
+  color: #a98c7e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.people-option {
+  padding: 6px 0;
+}
+
+.people-option .member-copy small {
+  font-size: 12px;
+}
+
+.people-count {
+  color: var(--light-black);
+  font-size: 12px;
+}
+
+/* Checkboxes inside dialog fieldsets were picking up the 44px text-input height */
+.action-dialog .form-field .action-check input {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+}
+
+/*DETAILS DRAWER*/
+.drawer-readonly {
+  padding: 0 12px;
+  color: var(--medium-black);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.drawer-comment strong {
+  color: var(--black);
+  font-size: 12px;
+}
+
+.drawer-comment small {
+  color: var(--grey);
+  font-size: 12px;
+}
+
+.drawer-comment p {
+  margin-top: 4px;
+}
+
+.record-drawer .drawer-title .badge {
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+.discipline-summary {
+  margin-left: 6px;
+  color: var(--grey);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/*SHARED DATE PICKER (every date field uses the Create Project calendar)*/
+.date-picker.has-value > summary {
+  color: var(--medium-black);
+}
+
+.drawer-control[hidden] {
+  display: none;
+}
+
+/* Match the height and corners of the fields around it */
+.task-dialog .date-picker > summary {
+  min-height: 44px;
+}
+
+.notes-dialog .date-picker > summary {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.drawer-detail .date-picker > summary {
+  min-height: 36px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}

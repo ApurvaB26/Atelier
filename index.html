@@ -370,7 +370,7 @@ Logout
         <div class="form-field">
           <label for="project-start-date">Start date</label>
           <input class="visually-hidden date-value-input" id="project-start-date" name="startDate" type="date" tabindex="-1" aria-hidden="true">
-          <details class="date-picker" data-date-picker="project-start-date">
+          <details class="date-picker" data-date-picker="project-start-date" data-placeholder="Select start date">
             <summary aria-label="Choose project start date"><span class="date-picker-value">Select start date</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 2.5v4M13.5 2.5v4M3.5 8h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></summary>
             <div class="calendar-panel">
               <div class="calendar-topline"><button class="calendar-back" type="button" aria-label="Previous month">‹</button><div><strong class="calendar-selected-date">Select a date</strong><span class="calendar-week"></span></div><button class="calendar-open-native" type="button" aria-label="Open calendar">▦</button></div>
@@ -384,7 +384,7 @@ Logout
         <div class="form-field">
           <label for="project-target-date">Target completion date</label>
           <input class="visually-hidden date-value-input" id="project-target-date" name="targetDate" type="date" tabindex="-1" aria-hidden="true">
-          <details class="date-picker" data-date-picker="project-target-date">
+          <details class="date-picker" data-date-picker="project-target-date" data-placeholder="Select target date">
             <summary aria-label="Choose target completion date"><span class="date-picker-value">Select target date</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 2.5v4M13.5 2.5v4M3.5 8h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></summary>
             <div class="calendar-panel">
               <div class="calendar-topline"><button class="calendar-back" type="button" aria-label="Previous month">‹</button><div><strong class="calendar-selected-date">Select a date</strong><span class="calendar-week"></span></div><button class="calendar-open-native" type="button" aria-label="Open calendar">▦</button></div>
@@ -623,7 +623,7 @@ Logout
         <div class="task-row">
           <div class="form-field">
             <label for="task-date">Target Date</label>
-            <input id="task-date" type="date">
+            <input id="task-date" type="date" data-placeholder="Select target date">
           </div>
           <div class="form-field">
             <label for="task-attachment">Attachment</label>
@@ -674,7 +674,7 @@ Logout
           </div>
           <div class="form-field">
             <label for="notes-date">Date</label>
-            <input id="notes-date" type="date">
+            <input id="notes-date" type="date" data-placeholder="Select meeting date">
           </div>
         </div>
 
@@ -837,6 +837,24 @@ Logout
       </footer>
     </form>
   </section>
+</div>
+
+<!-- Details drawer shared by RFIs, deliverables and transmittals -->
+<div class="drawer-backdrop" id="record-drawer-backdrop" hidden>
+  <aside class="task-drawer record-drawer" role="dialog" aria-modal="true" aria-labelledby="record-drawer-heading">
+    <header class="drawer-header">
+      <h2 id="record-drawer-heading">Details</h2>
+      <button class="drawer-close" type="button" aria-label="Close" data-close-record-drawer>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="drawer-body" id="record-drawer-body"></div>
+    <input class="visually-hidden" id="record-attachment-input" type="file" multiple tabindex="-1" aria-hidden="true">
+    <footer class="drawer-footer">
+      <button class="submit-project-btn drawer-save" type="button" data-record-save>Save Changes</button>
+      <button class="task-discard" type="button" data-close-record-drawer>Discard</button>
+    </footer>
+  </aside>
 </div>
 
 <!-- AI assistant drawer -->
@@ -1342,7 +1360,7 @@ Logout
   </defs>
 </svg>
       </span>
-      <div><strong>12</strong> Deliverables<small class="warn">1 overdue</small></div>
+      <div><strong id="metric-deliverables">12</strong> Deliverables<small class="warn"><span id="metric-deliverables-overdue">1</span> overdue</small></div>
     </div>
 
     
@@ -1467,6 +1485,11 @@ Logout
 </svg>
       RFIs</button>
 
+    <!-- Transmittals Button -->
+    <button class="project-nav-tab" type="button" data-project-view="transmittals">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7.3335L14.6667 1.3335L8.66667 14.0002L7.33333 8.66683L2 7.3335Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/></svg>
+      Transmittals</button>
+
     <!-- Files Button -->
     <button class="project-nav-tab" type="button" data-project-view="files">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -1499,40 +1522,6 @@ Logout
 </svg>
       Team</button>
    
-  </div>
-
-  <!--Filter by Tower and Starred Towers Button -->
-  <div class="project-nav-filters">
-    <div class="tower-dropdown">
-  <button class="tower-filter" type="button" aria-expanded="false">
-    <span class="tower-filter-label">All Towers</span>
-    <span class="select-chevron" aria-hidden="true"></span>
-  </button>
-
-  <div class="tower-menu" hidden>
-    <div class="tower-row" data-tower="All Towers">
-      <button class="tower-name" type="button">All Towers</button>
-    </div>
-    <div class="tower-row" data-tower="Tower 16">
-      <button class="tower-name" type="button">Tower 16</button>
-      <button class="tower-star" type="button" aria-pressed="false" aria-label="Star Tower 16">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L8 14.2 3 9.3l6.9-1Z"/></svg>
-      </button>
-    </div>
-    <div class="tower-row" data-tower="Tower 26">
-      <button class="tower-name" type="button">Tower 26</button>
-      <button class="tower-star" type="button" aria-pressed="false" aria-label="Star Tower 26">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L8 14.2 3 9.3l6.9-1Z"/></svg>
-      </button>
-    </div>
-  </div>
-</div>
-
-    <button class="starred-towers-btn" type="button">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M7.99967 1.33337L10.0597 5.50671L14.6663 6.18004L11.333 9.42671L12.1197 14.0134L7.99967 11.8467L3.87967 14.0134L4.66634 9.42671L1.33301 6.18004L5.93967 5.50671L7.99967 1.33337Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
-</svg>
-      Starred Towers</button>
   </div>
 </nav>
 
@@ -1618,10 +1607,10 @@ Logout
 
     <section class="overview-panel discipline-panel">
       <header class="overview-panel-header">
-        <h2>Deliverables by discipline</h2>
+        <h2>Deliverables by discipline <small class="discipline-summary" id="overview-discipline-count"></small></h2>
         <a class="overview-panel-link-inline" href="#project/deliverables" data-project-link="deliverables">View Details <span aria-hidden="true">↗</span></a>
       </header>
-      <div class="discipline-list">
+      <div class="discipline-list" id="overview-discipline-list">
         <div class="discipline-item">
           <span class="discipline-icon">ϟ</span><span class="discipline-name">Electrical</span>
           <span class="discipline-progress"><span style="width:72%"></span></span><span class="discipline-total"><strong>18</strong> /25</span>
@@ -1786,8 +1775,75 @@ Logout
   <footer class="project-task-pagination">Page 1 of 1</footer>
 </section>
 
-<!-- Project Deliverables (built from data in app.js, same layout as Open Items) -->
-<section class="project-tasks-view" id="project-deliverables-view" hidden aria-label="Project deliverables"></section>
+<!-- Project Deliverables: design deliverable tracker (can be imported from Excel / CSV) -->
+<section class="project-tasks-view" id="project-deliverables-view" hidden aria-label="Design deliverable tracker">
+  <div class="project-task-toolbar tracker-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Group deliverables by">
+      <span class="toolbar-label">Group by</span>
+      <button class="task-priority-filter is-active" type="button" data-tracker-group="tower" aria-pressed="true">Tower</button>
+      <button class="task-priority-filter" type="button" data-tracker-group="stage" aria-pressed="false">Stage</button>
+      <button class="task-priority-filter" type="button" data-tracker-group="department" aria-pressed="false">Department</button>
+      <button class="task-priority-filter" type="button" data-tracker-group="floor" aria-pressed="false">Floor</button>
+    </div>
+    <span class="oi-divider"></span>
+    <div class="task-advanced-filter-wrap">
+      <button class="task-advanced-filter-button" type="button" id="tracker-filter-btn" aria-expanded="false" aria-controls="tracker-filters">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5h14M6 10h8m-5 5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Filters <span class="filter-count" id="tracker-filter-count" hidden></span>
+      </button>
+      <div class="task-advanced-filters tracker-filters" id="tracker-filters" hidden></div>
+    </div>
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="tracker-search" type="search" aria-label="Search deliverables" placeholder="Search deliverables...">
+    </label>
+    <button class="task-advanced-filter-button" type="button" data-tracker-import>
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 13V3m0 0L6 7m4-4 4 4M3 13v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Import Tracker
+    </button>
+    <button class="project-task-add" type="button" data-project-action="add-deliverable"><span aria-hidden="true">+</span> Add Deliverable</button>
+  </div>
+  <p class="tracker-summary" id="tracker-summary"></p>
+  <div class="project-task-table-scroll">
+    <table class="data-table project-task-table oi-table tracker-table">
+      <thead id="tracker-head"></thead>
+      <tbody id="tracker-list"></tbody>
+    </table>
+    <p class="policy-empty" id="tracker-empty" hidden>No deliverables match these filters.</p>
+  </div>
+</section>
+
+<!-- Project Transmittals -->
+<section class="project-tasks-view" id="project-transmittals-view" hidden aria-label="Project transmittals">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter transmittals by status">
+      <button class="task-priority-filter is-active" type="button" data-transmittal-status="all" aria-pressed="true">All</button>
+      <button class="task-priority-filter" type="button" data-transmittal-status="pending" aria-pressed="false">Awaiting acknowledgement</button>
+      <button class="task-priority-filter" type="button" data-transmittal-status="acknowledged" aria-pressed="false">Acknowledged</button>
+      <button class="task-priority-filter" type="button" data-transmittal-status="returned" aria-pressed="false">Returned</button>
+    </div>
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="transmittal-search" type="search" aria-label="Search transmittals" placeholder="Search transmittals...">
+    </label>
+    <button class="project-task-add" type="button" data-project-action="transmittal"><span aria-hidden="true">+</span> Create Transmittal</button>
+  </div>
+  <div class="project-task-table-scroll">
+    <table class="data-table project-task-table oi-table transmittal-table">
+      <thead><tr>
+        <th scope="col">TR No.</th>
+        <th scope="col">Documents</th>
+        <th scope="col">To</th>
+        <th scope="col">Purpose</th>
+        <th scope="col">Sent</th>
+        <th scope="col">Status</th>
+        <th scope="col">Action</th>
+      </tr></thead>
+      <tbody id="transmittal-list"></tbody>
+    </table>
+    <p class="policy-empty" id="transmittal-empty" hidden>No transmittals match these filters.</p>
+  </div>
+</section>
 
 <!-- Project Files -->
 <section class="project-tasks-view" id="project-files-view" hidden aria-label="Project files">
@@ -1815,19 +1871,31 @@ Logout
 <!-- Project Team -->
 <section class="project-tasks-view" id="project-team-view" hidden aria-label="Project team">
   <div class="project-task-toolbar">
-    <div class="task-priority-filters" role="group" aria-label="Filter team by organisation">
-      <button class="task-priority-filter is-active" type="button" data-team-filter="all" aria-pressed="true">All</button>
-      <button class="task-priority-filter" type="button" data-team-filter="internal" aria-pressed="false">Internal</button>
-      <button class="task-priority-filter" type="button" data-team-filter="consultant" aria-pressed="false">Consultants</button>
-    </div>
-    <label class="project-task-search">
+    <label class="project-task-search team-search">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <input id="project-team-search" type="search" aria-label="Search team members" placeholder="Search people...">
+      <input id="project-team-search" type="search" aria-label="Search people across all teams" placeholder="Search people across all teams...">
     </label>
+    <button class="task-advanced-filter-button" type="button" id="team-expand-all" aria-pressed="false">Expand all teams</button>
     <button class="project-task-add" type="button" data-project-action="add-member"><span aria-hidden="true">+</span> Add Member</button>
   </div>
-  <div class="team-grid" id="project-team-grid"></div>
-  <p class="policy-empty" id="project-team-empty" hidden>No team members match these filters.</p>
+
+  <!-- Your own team is always open -->
+  <section class="team-section" aria-labelledby="team-mep-title">
+    <header class="team-section-head">
+      <h2 id="team-mep-title">MEP Design Team <span class="task-group-count" id="team-mep-count"></span></h2>
+      <span class="pref-hint">Your team</span>
+    </header>
+    <div class="team-grid" id="team-mep-grid"></div>
+  </section>
+
+  <!-- Other teams sit in folders that open in place -->
+  <section class="team-section" aria-labelledby="team-other-title">
+    <header class="team-section-head">
+      <h2 id="team-other-title">Other teams</h2>
+    </header>
+    <div class="team-folders" id="team-folders"></div>
+  </section>
+  <p class="policy-empty" id="project-team-empty" hidden>No one matches this search.</p>
 </section>
 
 <!-- Project Milestones (View All Milestones) -->
