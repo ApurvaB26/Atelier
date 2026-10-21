@@ -1244,6 +1244,25 @@ Logout
       <p class="policy-empty" id="policy-empty" hidden>No policies match your search.</p>
     </div>
   </section>
+
+  <!-- Approved Makes: equipment types grouped by discipline -->
+  <section class="makes-browser" id="makes-browser" aria-label="Approved makes" hidden>
+    <div class="policy-toolbar">
+      <div class="policy-categories makes-categories" role="group" aria-label="Filter makes by discipline">
+        <button class="policy-category active" type="button" data-makes-category="all" aria-pressed="true">All</button>
+        <button class="policy-category" type="button" data-makes-category="plumbing" aria-pressed="false">Plumbing</button>
+        <button class="policy-category" type="button" data-makes-category="firefighting" aria-pressed="false">Firefighting</button>
+        <button class="policy-category" type="button" data-makes-category="hvac" aria-pressed="false">HVAC</button>
+        <button class="policy-category" type="button" data-makes-category="electrical" aria-pressed="false">Electrical</button>
+      </div>
+      <label class="policy-search makes-search">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="makes-search" type="search" aria-label="Search approved makes" placeholder="Search equipment, makes or IS code...">
+      </label>
+    </div>
+    <div class="makes-groups" id="makes-groups"></div>
+    <p class="policy-empty" id="makes-empty" hidden>No approved makes match your search.</p>
+  </section>
 </section>
 
 <section class="overview-page" id="overview-page" hidden>

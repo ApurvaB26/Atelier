@@ -19,6 +19,11 @@ function filterTasks() {
   }
 
   if (!libraryView.hidden) {
+    if (currentLibraryTab === "makes") {
+      makesSearch.value = searchInput.value;
+      renderMakes();
+      return;
+    }
     policySearchInput.value = searchInput.value;
     filterPolicies();
     return;
@@ -462,7 +467,8 @@ const calendarPanelHtml = `
 let dateInputSeq = 0;
 
 function enhanceDateInputs(root = document) {
-  root.querySelectorAll('input[type="date"]:not(.date-value-input)').forEach((dateInput) => {
+  const dateInputs = root.matches?.('input[type="date"]') ? [root] : Array.from(root.querySelectorAll?.('input[type="date"]') || []);
+  dateInputs.filter((input) => !input.classList.contains('date-value-input')).forEach((dateInput) => {
     if (!dateInput.id) dateInput.id = `date-field-${++dateInputSeq}`;
     const label = (dateInput.getAttribute('aria-label') || dateInput.labels?.[0]?.textContent || 'date').replace('*', '').trim();
     dateInput.classList.add('visually-hidden', 'date-value-input');
@@ -494,7 +500,7 @@ document.addEventListener('click', (event) => {
 // Esc closes an open calendar first, before it can close the dialog or drawer underneath
 window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  const openPicker = document.querySelector('.date-picker[open]');
+  const openPicker = document.querySelector('.date-picker[open], .ui-select[open]');
   if (!openPicker) return;
   event.preventDefault();
   event.stopImmediatePropagation();
@@ -2480,6 +2486,7 @@ const flattenFields = (fields = []) => fields.flatMap((field) => (field.type ===
 function openActionDialog(config) {
   actionConfig = config;
   actionReturnFocus = document.activeElement;
+  actionBackdrop.querySelector(".action-dialog").classList.toggle("is-wide", Boolean(config.wide));
   document.getElementById("action-dialog-title").textContent = config.title;
   const subtitle = document.getElementById("action-dialog-subtitle");
   subtitle.textContent = config.subtitle || "";
@@ -3902,12 +3909,20 @@ function setLibraryTab(key) {
 
   if (policySortSelect.value === "name") policySortSelect.dispatchEvent(new Event("change"));
   filterPolicies();
+  const showMakes = key === "makes";
+  policyBrowser.hidden = showMakes;
+  makesBrowser.hidden = !showMakes;
+  if (showMakes) renderMakes();
   renderBreadcrumb([{ label: "Library", view: "library" }, { label: tab.label }]);
   syncHash(key === "policies" ? "library" : `library/${key}`);
 }
 
 function openLibraryDocument(row) {
   const doc = libraryTabs[currentLibraryTab].docs[Number(row.dataset.docIndex)];
+  if (currentLibraryTab === "policies") {
+    openPolicyViewer(doc);
+    return;
+  }
   openActionDialog({
     title: doc.name,
     subtitle: `${libraryTabs[currentLibraryTab].label} · ${doc.no}`,
@@ -3917,6 +3932,174 @@ function openLibraryDocument(row) {
     onSubmit() { showToast(`Downloading ${doc.no} — ${doc.name}…`); }
   });
 }
+
+// Policies open in a read-only viewer: no download or print
+function openPolicyViewer(doc) {
+  const pages = Number((doc.meta.match(/(\d+)\s*Pages/i) || [])[1]) || 1;
+  openActionDialog({
+    title: doc.name,
+    subtitle: `${doc.no} · ${doc.version} · Updated ${formatLongDate(doc.updated)}`,
+    wide: true,
+    body: `
+      <div class="doc-viewer">
+        <div class="doc-viewer-bar">
+          <span>Page 1 of ${pages}</span>
+          <span class="doc-viewer-lock">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            View only — policies can't be downloaded or printed
+          </span>
+        </div>
+        <article class="doc-page" aria-label="${escapeHtml(doc.name)}, page 1">
+          <p class="doc-page-kicker">MEP Policy · ${escapeHtml(doc.no)}</p>
+          <h3>${escapeHtml(doc.name)}</h3>
+          <p class="doc-page-meta">Version ${escapeHtml(doc.version)} · Effective ${formatLongDate(doc.updated)} · Discipline: ${escapeHtml(doc.category.toUpperCase())}</p>
+          <h4>1. Purpose</h4>
+          <p>Sets out the minimum design and documentation requirements covered by this policy, so every project applies them the same way.</p>
+          <h4>2. Scope</h4>
+          <p>Applies to all towers, podiums, basements and MLCPs at concept, design development, GFC and VFC stages, for in-house teams and appointed consultants.</p>
+          <h4>3. Revision history</h4>
+          <table class="doc-page-table">
+            <thead><tr><th>Version</th><th>Date</th><th>Change</th></tr></thead>
+            <tbody><tr><td>${escapeHtml(doc.version)}</td><td>${formatLongDate(doc.updated)}</td><td>Current issue</td></tr></tbody>
+          </table>
+          <p class="doc-page-note">Sample page — the policy document itself will display here once documents are connected.</p>
+        </article>
+      </div>`,
+    submitLabel: null,
+    cancelLabel: "Close"
+  });
+}
+
+/* APPROVED MAKES (Library tab): equipment types grouped by discipline */
+const makesBrowser = document.getElementById("makes-browser");
+const makesSearch = document.getElementById("makes-search");
+let makesCategory = "all";
+const collapsedMakeGroups = new Set();
+
+const makesGroups = [
+  { key: "electrical", label: "Electrical makes", items: [
+    { type: "APFC Panel", makes: ["Schneider", "ABB", "L&T", "Epcos"], preferred: "Schneider", code: "IS 26852", notes: "Automatic, thyristor switched", updated: "2026-07-15" },
+    { type: "Battery", makes: ["Exide", "Amara Raja", "Luminous"], preferred: "Exide", code: "", notes: "SMF / VRLA", updated: "2026-07-10" },
+    { type: "Bus Duct", makes: ["C&S", "Schneider", "ABB"], preferred: "C&S", code: "", notes: "Sandwich type, AL conductor", updated: "2026-07-08" },
+    { type: "Cables (LT)", makes: ["Polycab", "Finolex", "Havells"], preferred: "Polycab", code: "IS 7098", notes: "AL/CU XLPE FRLS armoured", updated: "2026-07-02" },
+    { type: "DG Set", makes: ["Cummins", "Kirloskar", "Caterpillar"], preferred: "Cummins", code: "IS 4772", notes: "1500 RPM, AMF panel, acoustic enclosure", updated: "2026-06-28" },
+    { type: "LT Panel", makes: ["Schneider", "Siemens", "L&T"], preferred: "Schneider", code: "IS/IEC 61439", notes: "Type-tested, Form 4b", updated: "2026-06-24" },
+    { type: "Light Fixtures", makes: ["Philips", "Wipro", "Havells"], preferred: "Philips", code: "IS 10322", notes: "LED, 4000K in common areas", updated: "2026-06-18" }
+  ] },
+  { key: "plumbing", label: "Plumbing makes", items: [
+    { type: "Pipes (CPVC)", makes: ["Ashirvad", "Supreme", "Prince"], preferred: "Ashirvad", code: "IS 15778", notes: "SDR 11, hot & cold water", updated: "2026-07-15" },
+    { type: "Pipes (uPVC SWR)", makes: ["Supreme", "Finolex", "Prince"], preferred: "Supreme", code: "IS 13592", notes: "Type B, ring-fit joints", updated: "2026-07-05" },
+    { type: "Booster Pumps", makes: ["Grundfos", "Wilo", "KSB"], preferred: "Grundfos", code: "", notes: "VFD hydropneumatic system", updated: "2026-06-30" },
+    { type: "Sanitaryware", makes: ["Kohler", "Jaquar", "Roca"], preferred: "Kohler", code: "IS 2556", notes: "Wall-hung WCs", updated: "2026-06-21" },
+    { type: "CP Fittings", makes: ["Grohe", "Jaquar", "Kohler"], preferred: "Grohe", code: "IS 8931", notes: "Chrome finish, aerated outlets", updated: "2026-06-21" }
+  ] },
+  { key: "firefighting", label: "Firefighting makes", items: [
+    { type: "Sprinklers", makes: ["Tyco", "Viking", "HD Fire"], preferred: "Tyco", code: "IS 15105", notes: "UL/FM listed, 68°C bulb", updated: "2026-07-12" },
+    { type: "Fire Pumps", makes: ["Kirloskar", "Grundfos", "Mather+Platt"], preferred: "Kirloskar", code: "IS 12469", notes: "Main, diesel standby and jockey sets", updated: "2026-07-01" },
+    { type: "Fire Alarm Panel", makes: ["Notifier", "Siemens", "Bosch"], preferred: "Notifier", code: "IS 2189", notes: "Addressable, networkable", updated: "2026-06-26" },
+    { type: "Hydrant Valves", makes: ["Newage", "HD Fire", "Minimax"], preferred: "Newage", code: "IS 5290", notes: "Landing valve, SS internals", updated: "2026-06-20" },
+    { type: "GI Pipes", makes: ["Tata", "Jindal", "Apollo"], preferred: "Tata", code: "IS 1239", notes: "Heavy class, ERW", updated: "2026-06-12" }
+  ] },
+  { key: "hvac", label: "HVAC makes", items: [
+    { type: "Chillers", makes: ["Carrier", "Daikin", "Trane"], preferred: "Carrier", code: "", notes: "Water-cooled screw", updated: "2026-07-14" },
+    { type: "VRF Systems", makes: ["Daikin", "Mitsubishi", "Hitachi"], preferred: "Daikin", code: "", notes: "Heat pump, inverter outdoor units", updated: "2026-07-09" },
+    { type: "AHU", makes: ["Zeco", "Edgetech", "Blue Star"], preferred: "Zeco", code: "", notes: "Double-skin, 50 mm PUF panels", updated: "2026-06-29" },
+    { type: "GI Ducting", makes: ["Tata", "JSW"], preferred: "Tata", code: "IS 277", notes: "Factory-fabricated, Pittsburgh lock", updated: "2026-06-22" },
+    { type: "Jet Fans", makes: ["Systemair", "Kruger", "Nicotra"], preferred: "Systemair", code: "", notes: "Reversible, 300°C / 2 h rated", updated: "2026-06-15" }
+  ] }
+];
+
+function renderMakes() {
+  const query = makesSearch.value.trim().toLocaleLowerCase();
+  let shown = 0;
+
+  document.getElementById("makes-groups").innerHTML = makesGroups
+    .filter((group) => makesCategory === "all" || group.key === makesCategory)
+    .map((group) => {
+      const rows = group.items
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => `${item.type} ${item.makes.join(" ")} ${item.code} ${item.notes}`.toLocaleLowerCase().includes(query));
+      if (!rows.length) return "";
+      shown += rows.length;
+      // A search always shows its matches, even in a collapsed group
+      const open = Boolean(query) || !collapsedMakeGroups.has(group.key);
+      return `
+        <section class="makes-group">
+          <button class="makes-group-head" type="button" data-makes-toggle="${group.key}" aria-expanded="${open}">
+            <span class="task-group-chevron" aria-hidden="true"></span>
+            <span class="makes-group-title">${group.label}</span>
+            <span class="makes-group-count">${rows.length} equipment type${rows.length === 1 ? "" : "s"}</span>
+          </button>
+          ${open ? `
+          <div class="policy-table-scroll makes-table-scroll">
+            <table class="policy-table makes-table">
+              <thead><tr><th scope="col">Equipment Type</th><th scope="col">Approved Makes</th><th scope="col">Preferred</th><th scope="col">IS Code</th><th scope="col">Notes</th><th scope="col">Last Updated</th></tr></thead>
+              <tbody>
+                ${rows.map(({ item, index }) => `
+                  <tr data-make-group="${group.key}" data-make-index="${index}" tabindex="0">
+                    <td><strong>${escapeHtml(item.type)}</strong></td>
+                    <td>${item.makes.map(escapeHtml).join(" / ")}</td>
+                    <td><span class="make-chip">${escapeHtml(item.preferred)}</span></td>
+                    <td>${escapeHtml(item.code || "—")}</td>
+                    <td>${escapeHtml(item.notes)}</td>
+                    <td>${formatLongDate(item.updated)}</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>` : ""}
+        </section>`;
+    }).join("");
+
+  document.getElementById("makes-empty").hidden = shown !== 0;
+}
+
+function openMakeDetails(row) {
+  const group = makesGroups.find((g) => g.key === row.dataset.makeGroup);
+  const item = group.items[Number(row.dataset.makeIndex)];
+  openActionDialog({
+    title: item.type,
+    subtitle: group.label,
+    body: `
+      <div class="make-chip-list">${item.makes.map((make) => `<span class="make-chip${make === item.preferred ? "" : " is-plain"}">${escapeHtml(make)}${make === item.preferred ? " · Preferred" : ""}</span>`).join("")}</div>
+      ${detailList([["IS Code", item.code || "—"], ["Last updated", formatLongDate(item.updated)], ["Notes", item.notes]])}`,
+    submitLabel: null,
+    cancelLabel: "Close"
+  });
+}
+
+document.querySelectorAll("[data-makes-category]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    makesCategory = chip.dataset.makesCategory;
+    document.querySelectorAll("[data-makes-category]").forEach((c) => {
+      c.classList.toggle("active", c === chip);
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    renderMakes();
+  });
+});
+
+makesSearch.addEventListener("input", renderMakes);
+
+document.getElementById("makes-groups").addEventListener("click", (e) => {
+  const toggle = e.target.closest("[data-makes-toggle]");
+  if (toggle) {
+    const key = toggle.dataset.makesToggle;
+    if (collapsedMakeGroups.has(key)) collapsedMakeGroups.delete(key);
+    else collapsedMakeGroups.add(key);
+    renderMakes();
+    return;
+  }
+  const row = e.target.closest("tr[data-make-index]");
+  if (row) openMakeDetails(row);
+});
+
+document.getElementById("makes-groups").addEventListener("keydown", (e) => {
+  const row = e.target.closest("tr[data-make-index]");
+  if (row && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    openMakeDetails(row);
+  }
+});
 
 document.querySelectorAll("[data-library-tab]").forEach((button) => {
   button.addEventListener("click", () => setLibraryTab(button.dataset.libraryTab));
@@ -4782,7 +4965,7 @@ let recordCtx = null;
 const recordSelect = (name, options, value) => `
   <span class="drawer-control">
     <select data-record-field="${name}" aria-label="${name}">
-      ${[...new Set([value, ...options].filter(Boolean))].map((option) => `<option${option === value ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+      ${(value && !options.includes(value) ? [value, ...options] : options).map((option) => `<option${option === value ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
     </select>
     <span class="drawer-chevron" aria-hidden="true"></span>
   </span>`;
@@ -5132,7 +5315,164 @@ function renderRailDate() {
   document.getElementById("rail-week").textContent = `Week ${getIsoWeek(now)} · ${now.getFullYear()}`;
 }
 
+/* CUSTOM DROPDOWNS: every native <select> becomes the same dropdown as Create Project.
+   The hidden <select> stays the source of truth, so existing code reading .value keeps working. */
+const nativeSelectValue = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+let selectSeq = 0;
+
+const selectForDropdown = (dropdown) => document.getElementById(dropdown.dataset.selectFor);
+
+function syncDropdown(dropdown) {
+  const select = selectForDropdown(dropdown);
+  if (!select) return;
+  const text = select.selectedOptions[0]?.textContent.trim() || "";
+  dropdown.querySelector(".select-value").textContent = text;
+  const label = dropdown.dataset.label;
+  dropdown.querySelector("summary").setAttribute("aria-label", label ? `${label}: ${text}` : text);
+}
+
+function renderDropdownOptions(dropdown) {
+  const select = selectForDropdown(dropdown);
+  dropdown.querySelector(".ui-select-menu").innerHTML = Array.from(select.options).map((option, index) => `
+    <button class="ui-select-option" type="button" role="option" data-option-index="${index}" aria-selected="${option.selected}"${option.disabled ? " disabled" : ""}>
+      <span>${escapeHtml(option.textContent.trim())}</span>
+      <span class="option-check" aria-hidden="true">✓</span>
+    </button>`).join("");
+}
+
+// Same idea as the calendar: measure in screen pixels, place in CSS pixels under the page zoom
+function positionDropdownMenu(dropdown) {
+  const menu = dropdown.querySelector(".ui-select-menu");
+  const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+  const trigger = dropdown.querySelector("summary").getBoundingClientRect();
+  const menuHeight = menu.getBoundingClientRect().height / zoom;
+  const viewportHeight = window.innerHeight / zoom;
+  const viewportWidth = window.innerWidth / zoom;
+  const top = trigger.top / zoom;
+  const bottom = trigger.bottom / zoom;
+  const width = Math.max(trigger.width / zoom, 160);
+  const openUp = viewportHeight - bottom < menuHeight + 12 && top > viewportHeight - bottom;
+  menu.style.setProperty("--select-menu-top", `${openUp ? top - menuHeight + 1 : bottom - 1}px`);
+  menu.style.setProperty("--select-menu-left", `${Math.min(trigger.left / zoom, viewportWidth - width - 12)}px`);
+  menu.style.setProperty("--select-menu-width", `${width}px`);
+  dropdown.classList.toggle("opens-up", openUp);
+}
+
+function enhanceSelects(root = document) {
+  const selects = root.matches?.("select") ? [root] : Array.from(root.querySelectorAll?.("select") || []);
+  selects.forEach((select) => {
+    if (select.dataset.enhanced || select.multiple) return;
+    select.dataset.enhanced = "true";
+    if (!select.id) select.id = `select-field-${++selectSeq}`;
+
+    const dropdown = document.createElement("details");
+    dropdown.className = "custom-select ui-select";
+    dropdown.dataset.selectFor = select.id;
+    dropdown.dataset.label = (select.getAttribute("aria-label") || select.labels?.[0]?.textContent || "").replace("*", "").trim();
+    dropdown.innerHTML = `<summary aria-haspopup="listbox"><span class="select-value"></span><span class="select-chevron" aria-hidden="true"></span></summary><div class="select-menu ui-select-menu" role="listbox"></div>`;
+
+    select.classList.add("visually-hidden");
+    select.tabIndex = -1;
+    select.setAttribute("aria-hidden", "true");
+
+    // Drawer fields wrap the select in a bordered control; the dropdown brings its own border
+    const wrapper = select.closest(".drawer-control");
+    (wrapper || select).after(dropdown);
+    if (wrapper) wrapper.hidden = true;
+
+    Object.defineProperty(select, "value", {
+      configurable: true,
+      get() { return nativeSelectValue.get.call(this); },
+      set(value) {
+        nativeSelectValue.set.call(this, value);
+        syncDropdown(dropdown);
+      }
+    });
+    select.addEventListener("change", () => syncDropdown(dropdown));
+    select.form?.addEventListener("reset", () => setTimeout(() => syncDropdown(dropdown)));
+
+    Array.from(select.labels || []).forEach((label) => {
+      label.addEventListener("click", (event) => {
+        if (dropdown.contains(event.target)) return;
+        event.preventDefault();
+        dropdown.open = !dropdown.open;
+        dropdown.querySelector("summary").focus();
+      });
+    });
+
+    dropdown.addEventListener("toggle", () => {
+      if (!dropdown.open) return;
+      document.querySelectorAll(".ui-select[open], .date-picker[open]").forEach((other) => {
+        if (other !== dropdown) other.open = false;
+      });
+      renderDropdownOptions(dropdown);
+      positionDropdownMenu(dropdown);
+      requestAnimationFrame(() => positionDropdownMenu(dropdown));
+      dropdown.querySelector('.ui-select-option[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+    });
+
+    syncDropdown(dropdown);
+  });
+}
+
+function chooseDropdownOption(option) {
+  const dropdown = option.closest(".ui-select");
+  const select = selectForDropdown(dropdown);
+  const index = Number(option.dataset.optionIndex);
+  dropdown.open = false;
+  dropdown.querySelector("summary").focus();
+  if (select.selectedIndex === index) return;
+  select.selectedIndex = index;
+  syncDropdown(dropdown);
+  select.dispatchEvent(new Event("input", { bubbles: true }));
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+document.addEventListener("click", (event) => {
+  const option = event.target.closest(".ui-select-option");
+  if (option) {
+    chooseDropdownOption(option);
+    return;
+  }
+  document.querySelectorAll(".ui-select[open]").forEach((dropdown) => {
+    if (!dropdown.contains(event.target)) dropdown.open = false;
+  });
+});
+
+// Arrow keys move through options; arrow down on a closed dropdown opens it
+document.addEventListener("keydown", (event) => {
+  const dropdown = event.target.closest?.(".ui-select");
+  if (!dropdown || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  if (!dropdown.open) {
+    dropdown.open = true;
+    requestAnimationFrame(() => (dropdown.querySelector('.ui-select-option[aria-selected="true"]') || dropdown.querySelector(".ui-select-option"))?.focus());
+    return;
+  }
+  const options = Array.from(dropdown.querySelectorAll(".ui-select-option:not(:disabled)"));
+  const current = options.indexOf(document.activeElement);
+  const next = event.key === "Home" ? 0
+    : event.key === "End" ? options.length - 1
+      : event.key === "ArrowDown" ? Math.min(options.length - 1, current + 1)
+        : Math.max(0, current - 1);
+  options[next]?.focus();
+});
+
+["resize", "scroll"].forEach((type) => {
+  window.addEventListener(type, () => {
+    document.querySelectorAll(".ui-select[open]").forEach(positionDropdownMenu);
+  }, true);
+});
+
 /* INITIAL RENDER */
+enhanceSelects();
+new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    enhanceSelects(node);
+    enhanceDateInputs(node);
+  }));
+}).observe(document.body, { childList: true, subtree: true });
 enhanceDateInputs();
 renderRailDate();
 applyProfile();
