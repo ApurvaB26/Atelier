@@ -46,6 +46,7 @@ const clearTeamSelectionButton = document.querySelector('.clear-team-selection')
 const teamDoneButton = document.querySelector('.team-done-btn');
 const dashboardView = document.querySelector('#dashboard-view');
 const projectsView = document.querySelector('#projects-view');
+const libraryView = document.querySelector('#library-view');
 const viewLinks = Array.from(document.querySelectorAll('[data-view-target]'));
 const projectSearchInput = document.querySelector('#project-search');
 const projectStatusFilter = document.querySelector('#project-status-filter');
@@ -56,10 +57,14 @@ const datePickers = Array.from(projectDialog.querySelectorAll('.date-picker'));
 let dialogReturnFocus = null;
 
 function setCurrentView(viewName) {
+  openItemsPage.hidden = true;
   const showProjects = viewName === 'projects';
+  const showLibrary = viewName === 'library';
   document.querySelector('.app').classList.toggle('project-page-active', showProjects);
-  dashboardView.hidden = showProjects;
+  document.querySelector('.app').classList.toggle('library-page-active', showLibrary);
+  dashboardView.hidden = showProjects || showLibrary;
   projectsView.hidden = !showProjects;
+  libraryView.hidden = !showLibrary;
 
   document.querySelectorAll('.nav-bar [data-view-target]').forEach((link) => {
     const isCurrent = link.dataset.viewTarget === viewName;
@@ -100,6 +105,55 @@ starredProjectsFilter.addEventListener('click', () => {
   const isPressed = starredProjectsFilter.getAttribute('aria-pressed') === 'true';
   starredProjectsFilter.setAttribute('aria-pressed', String(!isPressed));
   filterProjectCards();
+});
+
+const policySearchInput = document.querySelector('#policy-search');
+const policyList = document.querySelector('#policy-list');
+const policyCategoryButtons = Array.from(document.querySelectorAll('[data-policy-category]'));
+const policyEmptyMessage = document.querySelector('#policy-empty');
+const policyFilterButton = document.querySelector('.policy-filter-button');
+const policyFilterMenu = document.querySelector('#policy-filter-menu');
+const policySortSelect = document.querySelector('#policy-sort');
+let selectedPolicyCategory = 'all';
+
+function filterPolicies() {
+  const query = policySearchInput.value.trim().toLocaleLowerCase();
+  let visibleCount = 0;
+
+  policyList.querySelectorAll('tr').forEach((row) => {
+    const matchesCategory = selectedPolicyCategory === 'all' || row.dataset.policyCategory === selectedPolicyCategory;
+    const matchesSearch = row.textContent.toLocaleLowerCase().includes(query);
+    row.hidden = !matchesCategory || !matchesSearch;
+    if (!row.hidden) visibleCount += 1;
+  });
+
+  policyEmptyMessage.hidden = visibleCount !== 0;
+}
+
+policyCategoryButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    selectedPolicyCategory = button.dataset.policyCategory;
+    policyCategoryButtons.forEach((categoryButton) => {
+      const isSelected = categoryButton === button;
+      categoryButton.classList.toggle('active', isSelected);
+      categoryButton.setAttribute('aria-pressed', String(isSelected));
+    });
+    filterPolicies();
+  });
+});
+
+policySearchInput.addEventListener('input', filterPolicies);
+policyFilterButton.addEventListener('click', () => {
+  const isExpanded = policyFilterButton.getAttribute('aria-expanded') === 'true';
+  policyFilterButton.setAttribute('aria-expanded', String(!isExpanded));
+  policyFilterMenu.hidden = isExpanded;
+});
+policySortSelect.addEventListener('change', () => {
+  const rows = Array.from(policyList.querySelectorAll('tr'));
+  rows.sort((first, second) => policySortSelect.value === 'name'
+    ? first.cells[1].querySelector('strong').textContent.localeCompare(second.cells[1].querySelector('strong').textContent)
+    : second.dataset.updated.localeCompare(first.dataset.updated));
+  policyList.replaceChildren(...rows);
 });
 
 projectCards.forEach((card) => {
@@ -613,7 +667,11 @@ document.addEventListener("click", (e) => {
   // Sidebar links and breadcrumb links
   const viewLink = e.target.closest("[data-view-target]");
   if (viewLink) {
-    renderBreadcrumb([{ label: sidebarLabel(viewLink.dataset.viewTarget) }]);
+    const viewName = viewLink.dataset.viewTarget;
+    const trail = viewName === 'library'
+      ? [{ label: 'Library', view: 'library' }, { label: 'Policies' }]
+      : [{ label: sidebarLabel(viewName) }];
+    renderBreadcrumb(trail);
     return;
   }
 
@@ -647,22 +705,31 @@ const projectHeader = overviewPage.querySelector(".project-header");
 const projectHeaderCard = overviewPage.querySelector(".project-header-card");
 const projectOverviewContent = document.getElementById("project-overview-content");
 const projectTasksView = document.getElementById("project-tasks-view");
+const projectRfisView = document.getElementById("project-rfis-view");
 const projectTaskList = document.getElementById("project-task-list");
 const projectTaskSearch = document.getElementById("project-task-search");
 const projectTaskStatusFilter = document.getElementById("project-task-status-filter");
 let projectTaskPriorityFilter = "all";
 
 function setProjectView(viewName) {
-  const showTasks = viewName === "tasks";
-  projectHeader.hidden = showTasks;
-  projectHeaderCard.hidden = showTasks;
-  projectOverviewContent.hidden = showTasks;
-  projectTasksView.hidden = !showTasks;
+  const showOverview = viewName === "overview";
+  projectHeader.hidden = !showOverview;
+  projectHeaderCard.hidden = !showOverview;
+  projectOverviewContent.hidden = !showOverview;
+  projectTasksView.hidden = viewName !== "tasks";
+  projectRfisView.hidden = viewName !== "rfis";
+
   document.querySelectorAll("[data-project-view]").forEach((tab) => {
     const isActive = tab.dataset.projectView === viewName;
     tab.classList.toggle("active", isActive);
     tab.setAttribute("aria-pressed", String(isActive));
   });
+
+  const name = overviewPage.querySelector(".project-title").textContent;
+  const tabLabel = { tasks: "Tasks", rfis: "RFIs" }[viewName];
+  renderBreadcrumb(tabLabel
+    ? [{ label: "Projects", view: "projects" }, { label: name, view: "projects" }, { label: tabLabel }]
+    : [{ label: "Projects", view: "projects" }, { label: name }]);
 }
 
 function taskMatchesProjectFilters(row) {
@@ -1346,7 +1413,7 @@ function updateTaskDueLabel(row, dateValue) {
 }
 
 document.addEventListener("click", (e) => {
-  const row = e.target.closest(".table-scroll tbody tr, .project-task-table tbody tr");
+  const row = e.target.closest(".table-scroll tbody tr, .project-task-table:not(.oi-table) tbody tr");
   const commentBtn = e.target.closest(".comment-btn");
 
   // Row click opens the drawer. The Comment button opens it too.
@@ -1503,39 +1570,87 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* PROFILE MENU */
-const userTrigger = document.querySelector(".user");
+const profileTrigger = document.querySelector(".profile-trigger");
 const profileCard = document.getElementById("profile-card");
-document.querySelector(".user-menu").append(profileCard);
+const roleSwitchTrigger = document.querySelector(".role-switch-trigger");
+const roleSwitchMenu = document.querySelector("#role-switch-menu");
+const currentRole = document.querySelector(".current-role");
+const roleOptions = Array.from(roleSwitchMenu.querySelectorAll("[data-role]"));
+const themeOptions = Array.from(document.querySelectorAll("[data-theme-choice]"));
 
 function setProfileOpen(open) {
   profileCard.hidden = !open;
-  userTrigger.setAttribute("aria-expanded", String(open));
+  profileTrigger.setAttribute("aria-expanded", String(open));
 }
 
-userTrigger.addEventListener("click", () => setProfileOpen(profileCard.hidden));
-
-userTrigger.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    setProfileOpen(profileCard.hidden);
+function setRoleMenuOpen(open, focusSelected = false) {
+  roleSwitchMenu.hidden = !open;
+  roleSwitchTrigger.setAttribute("aria-expanded", String(open));
+  if (open && focusSelected) {
+    (roleOptions.find((option) => option.getAttribute("aria-checked") === "true") || roleOptions[0]).focus();
   }
+}
+
+function setTheme(choice) {
+  const effectiveTheme = choice === "system"
+    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : choice;
+  document.documentElement.dataset.theme = effectiveTheme;
+  localStorage.setItem("atelier-theme-choice", choice);
+  themeOptions.forEach((option) => {
+    const isSelected = option.dataset.themeChoice === choice;
+    option.classList.toggle("active", isSelected);
+    option.setAttribute("aria-pressed", String(isSelected));
+  });
+}
+
+profileTrigger.addEventListener("click", () => setProfileOpen(profileCard.hidden));
+
+roleSwitchTrigger.addEventListener("click", () => {
+  setProfileOpen(false);
+  setRoleMenuOpen(roleSwitchMenu.hidden, roleSwitchMenu.hidden);
+});
+
+roleSwitchMenu.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-role]");
+  if (!option) return;
+  currentRole.textContent = option.dataset.role;
+  roleOptions.forEach((roleOption) => {
+    roleOption.setAttribute("aria-checked", String(roleOption === option));
+  });
+  setRoleMenuOpen(false);
+});
+
+roleSwitchMenu.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  event.preventDefault();
+  const currentIndex = roleOptions.indexOf(document.activeElement);
+  const offset = event.key === "ArrowDown" ? 1 : -1;
+  roleOptions[(currentIndex + offset + roleOptions.length) % roleOptions.length].focus();
 });
 
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".user-menu")) setProfileOpen(false);
+  if (!e.target.closest(".user-menu")) {
+    setProfileOpen(false);
+    setRoleMenuOpen(false);
+  }
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") setProfileOpen(false);
+  if (e.key === "Escape") {
+    setProfileOpen(false);
+    if (!roleSwitchMenu.hidden) {
+      setRoleMenuOpen(false);
+      roleSwitchTrigger.focus();
+    }
+  }
 });
 
-document.querySelectorAll(".theme-option").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".theme-option").forEach((b) =>
-      b.classList.toggle("active", b === btn)
-    );
-  });
+themeOptions.forEach((option) => {
+  option.addEventListener("click", () => setTheme(option.dataset.themeChoice));
 });
+
+setTheme(localStorage.getItem("atelier-theme-choice") || "system");
 
 /* DELIVERABLES */
 const deliverableChecks = Array.from(document.querySelectorAll("#deliverables-table input[type='checkbox']"));
@@ -1554,3 +1669,425 @@ deliverableChecks.forEach((c) => {
 });
 
 updateDeliverablesCount();
+
+/* OPEN ITEMS PAGE */
+const openItemsPage = document.getElementById("open-items-page");
+
+function setOpenItemsTab(tab) {
+  document.querySelectorAll("[data-open-tab]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.openTab === tab);
+  });
+  document.querySelectorAll("[data-open-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.openPanel !== tab;
+  });
+
+  const label = { deliverables: "Deliverables", rfis: "RFIs", tasks: "Tasks" }[tab];
+  renderBreadcrumb([
+    { label: "Dashboard", view: "dashboard" },
+    { label: "Open Items" },
+    { label }
+  ]);
+}
+
+function showOpenItems(tab) {
+  document.querySelector(".app").classList.add("project-page-active");
+  dashboardView.hidden = true;
+  projectsView.hidden = true;
+  overviewPage.hidden = true;
+  openItemsPage.hidden = false;
+  setOpenItemsTab(tab);
+}
+
+document.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-open-items]");
+  if (card) return showOpenItems(card.dataset.openItems);
+
+  const tab = e.target.closest("[data-open-tab]");
+  if (tab) setOpenItemsTab(tab.dataset.openTab);
+
+  // breadcrumb links switch the page too
+  const crumb = e.target.closest("#breadcrumb [data-view-target]");
+  if (crumb) setCurrentView(crumb.dataset.viewTarget);
+});
+
+/* OPEN ITEMS PANELS */
+const oiBadge = (p) => `<span class="badge ${p.toLowerCase()}">${p}</span>`;
+const oiDue = (label, due) => {
+  const cls = { overdue: "overdue", today: "due-today", tomorrow: "due-tomorrow" }[due] || "due-date";
+  return `<span class="status ${cls}">${label}</span>`;
+};
+const oiTitle = (title, sub, extra = "") =>
+  `<strong>${title}</strong>${extra}<span class="row-subtitle">${sub}</span>`;
+const oiAction = (label) => {
+  const icon = {
+    Comment: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    Remind: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    Respond: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    View: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'
+  }[label];
+  return `<button class="comment-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>${label}</button>`;
+};
+const waiting = (who) => ` · <span class="waiting-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> Waiting on ${who}</span>`;
+
+const openItemsConfig = {
+  tasks: {
+    title: "Your Tasks",
+    checkbox: true,
+    addLabel: "Add Task",
+    groups: [
+      { key: "todo", label: "To do", tone: "" },
+      { key: "in-progress", label: "In Progress", tone: "is-blue" },
+      { key: "in-review", label: "In Review", tone: "is-red" },
+      { key: "completed", label: "Completed", tone: "is-green" }
+    ],
+    columns: [
+      { label: "ID", cell: (r) => r.id },
+      { label: "Task", cell: (r) => oiTitle(r.title, r.sub + (r.waiting ? waiting(r.waiting) : "")) },
+      { label: "Priority", cell: (r) => oiBadge(r.priority) },
+      { label: "Due Date", cell: (r) => (r.group === "completed" ? "—" : oiDue(r.dueLabel, r.due)) },
+      { label: "Wing No.", cell: (r) => r.wing },
+      { label: "Assigned By", cell: (r) => r.by },
+      { label: "Action", cell: (r) => oiAction(r.action) }
+    ],
+    rows: [
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Plumbing", priority: "High", due: "today", dueLabel: "Due Today", wing: "Wing 25", by: "Apurva Bhadange", group: "todo", action: "Comment" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Plumbing", priority: "Medium", due: "today", dueLabel: "Due Today", wing: "Wing 25", by: "Apurva Bhadange", group: "todo", action: "Comment" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Plumbing", priority: "Medium", due: "overdue", dueLabel: "Overdue", wing: "Wing 25", by: "Sachin Patil", group: "in-progress", action: "Comment" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Plumbing", priority: "Low", due: "today", dueLabel: "Due Today", wing: "Wing 25", by: "Sachin Patil", group: "in-progress", action: "Comment" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Plumbing", priority: "Low", due: "tomorrow", dueLabel: "Due Tomorrow", wing: "Wing 25", by: "Sachin Patil", group: "in-progress", action: "Comment" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Firefighting", waiting: "MEP Consultant", priority: "Medium", due: "overdue", dueLabel: "Overdue", wing: "Wing 25", by: "Sachin Patil", group: "in-review", action: "Remind" },
+      { id: "T-12", title: "Approve Revised Typical Floor", sub: "Firefighting", waiting: "MEP Consultant", priority: "Medium", due: "overdue", dueLabel: "Overdue", wing: "Wing 25", by: "Sachin Patil", group: "in-review", action: "Remind" },
+      { id: "T-17", title: "Approve Revised Typical Floor", sub: "General", priority: "High", due: "", wing: "Wing 21", by: "Sachin Patil", group: "completed", action: "Comment" },
+      { id: "T-17", title: "Approve Revised Typical Floor", sub: "General", priority: "Low", due: "", wing: "Wing 21", by: "Sachin Patil", group: "completed", action: "Comment" }
+    ]
+  },
+
+  rfis: {
+    title: "RFIs",
+    checkbox: false,
+    towers: true,
+    groups: [
+      { key: "pending", label: "Pending", tone: "" },
+      { key: "completed", label: "Completed", tone: "is-green" }
+    ],
+    columns: [
+      { label: "RFI ID", cell: (r) => r.id },
+      { label: "Query", cell: (r) => oiTitle(r.query, `Received ${r.received} · 📎 ${r.files} files`, r.blocking ? '<span class="badge blocking">Blocking</span>' : "") },
+      { label: "Wing No.", cell: (r) => r.wing },
+      { label: "Impact", cell: (r) => r.impact },
+      { label: "Discipline", cell: (r) => r.disc },
+      { label: "Raised By", cell: (r) => r.by },
+      { label: "Action", cell: (r) => oiAction(r.action) }
+    ],
+    rows: [
+      { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", disc: "Electrical", by: "Sachin Patil", due: "today", group: "pending", action: "Respond" },
+      { id: "RFI-209", query: "MCB Rating Clarification", received: "2h ago", files: 2, wing: "Wing 25", impact: "None", disc: "Electrical", by: "Sachin Patil", due: "tomorrow", group: "pending", action: "Respond" },
+      { id: "RFI-209", query: "Issue Revised Infra Fire Layout", received: "2h ago", files: 2, wing: "Wing 25", impact: "None", disc: "Electrical", by: "Sachin Patil", due: "overdue", group: "pending", action: "Respond" },
+      { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", disc: "Electrical", by: "Sachin Patil", due: "week", group: "pending", action: "Respond" },
+      { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", disc: "Electrical", by: "Sachin Patil", due: "week", group: "pending", action: "Respond" },
+      { id: "RFI-211", query: "Issue Revise Infra Fire Layout", received: "3d ago", files: 1, wing: "Tower B", impact: "Cost", disc: "Firefighting", by: "Rohit Patil", due: "", group: "completed", action: "View" }
+    ]
+  },
+
+  // The Deliverables design wasn't in your screenshots, so this layout is my guess
+  deliverables: {
+    title: "Deliverables",
+    checkbox: true,
+    groups: [
+      { key: "pending", label: "Pending", tone: "" },
+      { key: "completed", label: "Completed", tone: "is-green" }
+    ],
+    columns: [
+      { label: "Document Name", cell: (r) => oiTitle(r.title, r.sub + (r.waiting ? waiting(r.waiting) : ""), oiBadge(r.priority)) },
+      { label: "Project Name", cell: (r) => r.project },
+      { label: "Status", cell: (r) => `<span class="task-state ${r.state}">${r.stateLabel}</span>` },
+      { label: "Due Date", cell: (r) => (r.group === "completed" ? "—" : oiDue(r.dueLabel, r.due)) },
+      { label: "Action", cell: (r) => (r.action ? oiAction(r.action) : "") }
+    ],
+    rows: [
+      { title: "Issue Fire Tender Package", sub: "Fire", waiting: "MEP Consultant", priority: "High", project: "Lodha One • Tower B", state: "delayed", stateLabel: "Delayed", due: "overdue", dueLabel: "Overdue", group: "pending", action: "Remind" },
+      { title: "Issue Coordinated Typical Floor GFC", sub: "Coordinated", priority: "Medium", project: "Lodha Amara • Wing 25", state: "in-progress", stateLabel: "In Progress", due: "today", dueLabel: "Due Today", group: "pending" },
+      { title: "Issue Revised Infra Fire Layout", sub: "Fire", waiting: "Architect", priority: "Medium", project: "Palava • Phase 2", state: "pending", stateLabel: "Pending", due: "tomorrow", dueLabel: "Due Tomorrow", group: "pending", action: "Remind" }
+    ]
+  }
+};
+
+function buildOpenItemsPanel(key) {
+  const cfg = openItemsConfig[key];
+  const panel = document.querySelector(`[data-open-panel="${key}"]`);
+  if (!panel) return;
+  const colCount = cfg.columns.length + (cfg.checkbox ? 1 : 0);
+
+  const rowHtml = (r) => `
+    <tr class="project-task-row oi-row${r.group === "completed" ? " done" : ""}" data-oi-row data-group="${r.group}" data-origin="${r.group === "completed" ? cfg.groups[0].key : r.group}" data-due="${r.due || ""}">
+      ${cfg.checkbox ? `<td><label class="custom-checkbox"><input class="task-checkbox oi-check" type="checkbox" aria-label="Complete ${r.title}" ${r.group === "completed" ? "checked" : ""}><span class="checkbox-box"></span></label></td>` : ""}
+      ${cfg.columns.map((c) => `<td>${c.cell(r)}</td>`).join("")}
+    </tr>`;
+
+  const groupHtml = (g) => `
+    <tr class="project-task-group-row" data-oi-group="${g.key}"><th colspan="${colCount}">
+      <button class="task-group-toggle" type="button" aria-expanded="true"><span class="task-group-chevron" aria-hidden="true"></span><span>${g.label}</span><span class="task-group-count ${g.tone}" data-oi-count></span></button>
+    </th></tr>
+    ${cfg.rows.filter((r) => r.group === g.key).map(rowHtml).join("")}`;
+
+  panel.classList.add("project-tasks-view");
+  panel.innerHTML = `
+    <div class="project-task-toolbar">
+      <div class="task-priority-filters" role="group" aria-label="Filter by due date">
+        <button class="task-priority-filter is-active" type="button" data-oi-due="all" aria-pressed="true">All</button>
+        <button class="task-priority-filter" type="button" data-oi-due="overdue" aria-pressed="false">Overdue</button>
+        <button class="task-priority-filter" type="button" data-oi-due="today" aria-pressed="false">Due Today</button>
+        <button class="task-priority-filter" type="button" data-oi-due="tomorrow" aria-pressed="false">Due Tomorrow</button>
+        <button class="task-priority-filter" type="button" data-oi-due="week" aria-pressed="false">Due in next 7 days</button>
+      </div>
+      <span class="oi-divider"></span>
+      <button class="task-advanced-filter-button" type="button">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5h14M6 10h8m-5 5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Filters
+      </button>
+      <label class="project-task-search">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input type="search" data-oi-search aria-label="Search ${cfg.title}" placeholder="Search tasks...">
+      </label>
+      ${cfg.addLabel ? `<button class="project-task-add create-task-btn" type="button"><span aria-hidden="true">+</span> ${cfg.addLabel}</button>` : ""}
+      ${cfg.towers ? `<button class="tower-filter" type="button"><span class="tower-filter-label">All Towers</span><span class="select-chevron" aria-hidden="true"></span></button>` : ""}
+    </div>
+
+    <div class="project-task-table-scroll">
+      <table class="data-table project-task-table oi-table">
+        <thead><tr>${cfg.checkbox ? '<th scope="col" aria-label="Complete"></th>' : ""}${cfg.columns.map((c) => `<th scope="col">${c.label}</th>`).join("")}</tr></thead>
+        <tbody>${cfg.groups.map(groupHtml).join("")}</tbody>
+      </table>
+    </div>
+    <footer class="project-task-pagination">Page 1 of 1</footer>`;
+
+  const body = panel.querySelector("tbody");
+  const search = panel.querySelector("[data-oi-search]");
+  let dueFilter = "all";
+  const dueMatches = { all: null, overdue: ["overdue"], today: ["today"], tomorrow: ["tomorrow"], week: ["today", "tomorrow", "week"] };
+
+  function refresh() {
+    const q = search.value.trim().toLocaleLowerCase();
+    const allowed = dueMatches[dueFilter];
+    cfg.groups.forEach((g) => {
+      const header = body.querySelector(`[data-oi-group="${g.key}"]`);
+      const open = header.querySelector(".task-group-toggle").getAttribute("aria-expanded") === "true";
+      let matching = 0;
+      body.querySelectorAll(`[data-oi-row][data-group="${g.key}"]`).forEach((row) => {
+        const ok = (!allowed || allowed.includes(row.dataset.due)) && row.textContent.toLocaleLowerCase().includes(q);
+        row.hidden = !ok || !open;
+        if (ok) matching += 1;
+      });
+      header.hidden = matching === 0;
+      header.querySelector("[data-oi-count]").textContent = String(matching).padStart(2, "0");
+    });
+  }
+
+  panel.querySelectorAll("[data-oi-due]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      dueFilter = chip.dataset.oiDue;
+      panel.querySelectorAll("[data-oi-due]").forEach((c) => {
+        c.classList.toggle("is-active", c === chip);
+        c.setAttribute("aria-pressed", String(c === chip));
+      });
+      refresh();
+    });
+  });
+
+  search.addEventListener("input", refresh);
+
+  body.addEventListener("click", (e) => {
+    const toggle = e.target.closest(".task-group-toggle");
+    if (!toggle) return;
+    toggle.setAttribute("aria-expanded", String(toggle.getAttribute("aria-expanded") !== "true"));
+    refresh();
+  });
+
+  body.addEventListener("change", (e) => {
+    const check = e.target.closest(".oi-check");
+    if (!check) return;
+    const row = check.closest("[data-oi-row]");
+    row.classList.toggle("done", check.checked);
+    row.dataset.group = check.checked ? "completed" : row.dataset.origin;
+    body.querySelector(`[data-oi-group="${row.dataset.group}"]`).after(row);
+    refresh();
+  });
+
+  refresh();
+}
+
+Object.keys(openItemsConfig).forEach(buildOpenItemsPanel);
+
+/* EMAIL OVERLAY */
+const mailTrigger = document.querySelector(".mail-trigger");
+const mailOverlay = document.getElementById("mail-overlay");
+const mailList = document.getElementById("mail-list");
+
+const unreadEmails = [
+  { name: "Arjun Mehta", time: "8 min ago",  subject: "Need decision on facade bracket detail",     preview: "We are holding the package until this detail is confirmed by the facade consultant.", project: "Riverside HQ" },
+  { name: "Priya Nair",  time: "32 min ago", subject: "Approval required: MEP routing report",       preview: "Could you review the two highlighted clashes before the coordination call tomorrow?", project: "Northline Campus" },
+  { name: "Maya Chen",   time: "1 hr ago",   subject: "Authority response has arrived",              preview: "The fire strategy comments are now in the shared folder for your review.", project: "Harbour Point" },
+  { name: "Klara Singh", time: "2 hr ago",   subject: "Door hardware schedule — your input needed",  preview: "The access control team has updated their requirements for the main lobby doors.", project: "Northline Campus" }
+];
+
+const mailInitials = (name) => name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+
+mailList.innerHTML = unreadEmails.map((m) => `
+  <li class="mail-item">
+    <span class="mail-avatar">${mailInitials(m.name)}</span>
+    <div class="mail-item-head">
+      <strong class="mail-sender">${m.name}</strong>
+      <span class="mail-time">${m.time}</span>
+    </div>
+    <div class="mail-item-body">
+      <p class="mail-subject">${m.subject}</p>
+      <p class="mail-preview">${m.preview}</p>
+      <span class="mail-project">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.33 6.67c0 3.33-3.69 6.8-4.93 7.87a.67.67 0 0 1-.8 0C6.36 13.47 2.67 10 2.67 6.67a5.33 5.33 0 0 1 10.66 0Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="6.67" r="2" fill="currentColor"/></svg>
+        ${m.project}
+      </span>
+    </div>
+  </li>`).join("");
+
+function setMailOpen(open) {
+  mailOverlay.hidden = !open;
+  mailTrigger.setAttribute("aria-expanded", String(open));
+}
+
+mailTrigger.addEventListener("click", () => {
+  const opening = mailOverlay.hidden;
+  setProfileOpen(false);
+  setRoleMenuOpen(false);
+  setMailOpen(opening);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".mail-menu")) setMailOpen(false);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !mailOverlay.hidden) {
+    setMailOpen(false);
+    mailTrigger.focus();
+  }
+});
+
+/* PROJECT RFIs */
+const rfiData = [
+  { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", discipline: "Electrical", by: "Sachin Patil", status: "in-progress" },
+  { id: "RFI-209", query: "MCB Rating Clarification", received: "2h ago", files: 2, wing: "Wing 25", impact: "None", discipline: "Electrical", by: "Sachin Patil", status: "in-progress" },
+  { id: "RFI-209", query: "Issue Revised Infra Fire Layout", received: "2h ago", files: 2, wing: "Wing 25", impact: "None", discipline: "Electrical", by: "Sachin Patil", status: "delayed" },
+  { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", discipline: "Electrical", by: "Sachin Patil", status: "in-progress" },
+  { id: "RFI-209", query: "MCB Rating Clarification", blocking: true, received: "2h ago", files: 2, wing: "Wing 25", impact: "None", discipline: "Electrical", by: "Sachin Patil", status: "in-progress" },
+  { id: "RFI-211", query: "Issue Revise Infra Fire Layout", wing: "Tower B", impact: "Cost", discipline: "Firefighting", by: "Rohit Patil", status: "completed" }
+];
+
+const rfiGroups = [
+  { key: "pending", label: "Pending", tone: "", statuses: ["in-progress", "delayed"] },
+  { key: "completed", label: "Completed", tone: "is-green", statuses: ["completed"] }
+];
+
+const rfiList = document.getElementById("project-rfi-list");
+const rfiSearch = document.getElementById("project-rfi-search");
+const rfiDisciplineFilter = document.getElementById("rfi-discipline-filter");
+const rfiFilterBtn = document.getElementById("rfi-filter-btn");
+const rfiFilterMenu = document.getElementById("rfi-advanced-filters");
+let rfiStatusFilter = "all";
+const rfiCollapsed = new Set();
+
+const rfiClipIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>';
+const rfiSendIcon = '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>';
+const rfiEyeIcon = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+
+function rfiMatches(r) {
+  const q = rfiSearch.value.trim().toLocaleLowerCase();
+  const statusOk = rfiStatusFilter === "all" || r.status === rfiStatusFilter;
+  const disciplineOk = rfiDisciplineFilter.value === "all" || r.discipline === rfiDisciplineFilter.value;
+  const text = `${r.id} ${r.query} ${r.discipline} ${r.by} ${r.wing}`.toLocaleLowerCase();
+  return statusOk && disciplineOk && text.includes(q);
+}
+
+function rfiRowHtml(r) {
+  const done = r.status === "completed";
+  const sub = done ? "" : `<span class="row-subtitle">Received ${r.received} · ${rfiClipIcon} ${r.files} files</span>`;
+  const blocking = r.blocking ? '<span class="badge blocking">Blocking</span>' : "";
+  const action = done
+    ? { label: "View", icon: rfiEyeIcon }
+    : { label: "Respond", icon: rfiSendIcon };
+
+  return `
+    <tr class="project-task-row${done ? " done" : ""}">
+      <td>${r.id}</td>
+      <td><strong>${r.query}</strong>${blocking}${sub}</td>
+      <td>${r.wing}</td>
+      <td>${r.impact}</td>
+      <td>${r.discipline}</td>
+      <td>${r.by}</td>
+      <td><button class="comment-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${action.icon}</svg>${action.label}</button></td>
+    </tr>`;
+}
+
+function renderRfis() {
+  const html = rfiGroups.map((g) => {
+    const rows = rfiData.filter((r) => g.statuses.includes(r.status) && rfiMatches(r));
+    if (!rows.length) return "";
+    const open = !rfiCollapsed.has(g.key);
+    return `
+      <tr class="project-task-group-row"><th colspan="7">
+        <button class="task-group-toggle" type="button" data-rfi-toggle="${g.key}" aria-expanded="${open}"><span class="task-group-chevron" aria-hidden="true"></span><span>${g.label}</span><span class="task-group-count ${g.tone}">${String(rows.length).padStart(2, "0")}</span></button>
+      </th></tr>
+      ${open ? rows.map(rfiRowHtml).join("") : ""}`;
+  }).join("");
+
+  rfiList.innerHTML = html || '<tr><td colspan="7" class="drawer-empty" style="padding:24px">No RFIs match these filters.</td></tr>';
+}
+
+document.querySelectorAll("[data-rfi-status]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    rfiStatusFilter = chip.dataset.rfiStatus;
+    document.querySelectorAll("[data-rfi-status]").forEach((c) => {
+      c.classList.toggle("is-active", c === chip);
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    renderRfis();
+  });
+});
+
+rfiSearch.addEventListener("input", renderRfis);
+rfiDisciplineFilter.addEventListener("change", renderRfis);
+
+rfiFilterBtn.addEventListener("click", () => {
+  const expanded = rfiFilterBtn.getAttribute("aria-expanded") === "true";
+  rfiFilterBtn.setAttribute("aria-expanded", String(!expanded));
+  rfiFilterMenu.hidden = expanded;
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".task-advanced-filter-wrap")) {
+    rfiFilterBtn.setAttribute("aria-expanded", "false");
+    rfiFilterMenu.hidden = true;
+  }
+});
+
+rfiList.addEventListener("click", (e) => {
+  const toggle = e.target.closest("[data-rfi-toggle]");
+  if (!toggle) return;
+  const key = toggle.dataset.rfiToggle;
+  if (rfiCollapsed.has(key)) rfiCollapsed.delete(key);
+  else rfiCollapsed.add(key);
+  renderRfis();
+});
+
+// Download whatever the current filters show as a CSV file
+document.getElementById("project-rfi-download").addEventListener("click", () => {
+  const header = ["RFI ID", "Query", "Wing No.", "Impact", "Discipline", "Raised By", "Status"];
+  const rows = rfiData.filter(rfiMatches).map((r) => [r.id, r.query, r.wing, r.impact, r.discipline, r.by, r.status]);
+  const csv = [header, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  link.download = "rfis.csv";
+  link.click();
+  URL.revokeObjectURL(link.href);
+});
+
+renderRfis();

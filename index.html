@@ -57,7 +57,7 @@ Projects
 </a>
 
 <!--Reporting button-->
-  <a href="#">
+  <a href="#library" data-view-target="library">
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
   <path d="M3.33398 16.2505V3.74952C3.33398 3.19694 3.55346 2.66699 3.94412 2.27626C4.33478 1.88553 4.86463 1.66602 5.41711 1.66602H15.8327C16.0537 1.66602 16.2657 1.75382 16.4219 1.91011C16.5782 2.06641 16.666 2.27838 16.666 2.49942V17.5006C16.666 17.7216 16.5782 17.9336 16.4219 18.0899C16.2657 18.2462 16.0537 18.334 15.8327 18.334H5.41711C4.86463 18.334 4.33478 18.1145 3.94412 17.7238C3.55346 17.333 3.33398 16.8031 3.33398 16.2505ZM3.33398 16.2505C3.33398 15.6979 3.55346 15.168 3.94412 14.7773C4.33478 14.3865 4.86463 14.167 5.41711 14.167H16.666" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 </svg>
@@ -109,12 +109,27 @@ Logout
       Create Project
     </button>
 
+    
     <div class="icon-set">
-  <button class="icon-btn" aria-label="Mail">
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+<div class="mail-menu">
+  <button class="icon-btn mail-trigger" type="button" aria-label="Mail" aria-haspopup="true" aria-expanded="false">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
   <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6M22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
-</button>
+  </button>
+
+  <section class="mail-overlay" id="mail-overlay" aria-label="Recent emails" hidden>
+    <header class="mail-overlay-top">
+      <span class="mail-eyebrow">Recent emails</span>
+      <a class="mail-inbox-link" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noopener noreferrer">
+        View inbox
+        <svg width="12" height="12" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M1 11.6667L11.6667 1M11.6667 9V1H3.66667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </header>
+    <h2 class="mail-overlay-title">Needs a reply</h2>
+    <ul class="mail-list" id="mail-list"></ul>
+  </section>
+</div>
 
 <button class="icon-btn" aria-label="AI assistant">
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -131,20 +146,28 @@ Logout
 </div>
 
 <div class="user-menu">
-  <div class="user" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false">
-    <div class="user">
-      <div class="user-avatar">AB</div>
-      <div class="user-info">
-        <strong>Apurva Bhadange</strong>
-        <span class="user-role">Super Admin
-          <svg aria-hidden="true" viewBox="0 0 16 16" fill="none">
-            <path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
+  <div class="user">
+  <button class="user-avatar profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open profile menu">AB</button>
+  <div class="user-info">
+    <strong class="user-name">Apurva Bhadange</strong>
+    <div class="role-switch-wrap">
+        <button class="user-role role-switch-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="role-switch-menu">
+          <span class="current-role">Super Admin</span>
+          <svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="role-switch-menu" id="role-switch-menu" role="menu" aria-label="Switch role" hidden>
+          <span class="role-switch-heading">Switch role</span>
+          <button type="button" role="menuitemradio" data-role="Super Admin" aria-checked="true">Super Admin</button>
+          <button type="button" role="menuitemradio" data-role="L4" aria-checked="false">L4</button>
+          <button type="button" role="menuitemradio" data-role="L3" aria-checked="false">L3</button>
+          <button type="button" role="menuitemradio" data-role="L2" aria-checked="false">L2</button>
+          <button type="button" role="menuitemradio" data-role="L1" aria-checked="false">L1</button>
+          <button type="button" role="menuitemradio" data-role="L0" aria-checked="false">L0</button>
+          <button type="button" role="menuitemradio" data-role="HOD" aria-checked="false">HOD</button>
+        </div>
       </div>
     </div>
   </div>
-    </div>
 <div class="profile-card" id="profile-card" hidden>
     <div class="profile-head">
       <div class="profile-avatar">AB</div>
@@ -186,22 +209,15 @@ Logout
     </svg>
 
       Theme
-      <div 
-      class="theme-toggle">
-        <button 
-        class="theme-option active" type="button">
-          <svg 
-          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-        </svg>
-          Light
+      <div class="theme-toggle" role="group" aria-label="Choose theme">
+        <button class="theme-option active" type="button" data-theme-choice="system" aria-label="Use system theme" title="System theme" aria-pressed="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         </button>
-
-        <button 
-        class="theme-option" type="button">
-          <svg 
-          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
-        </svg>
-          Dark
+        <button class="theme-option" type="button" data-theme-choice="light" aria-label="Use light theme" title="Light theme" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button class="theme-option" type="button" data-theme-choice="dark" aria-label="Use dark theme" title="Dark theme" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
         </button>
       </div>
     </div>
@@ -218,13 +234,12 @@ Logout
         Log Out
       </button>
     </div>
-  </div>
-</div>
-
-
-
-</header>
-</div>
+    </div>   <!-- profile-card -->
+</div>     <!-- user-menu -->
+</div>     <!-- topbar-right -->
+</div>     <!-- topbar-actions -->
+</div>     <!-- topbar -->
+</div>     <!-- main-header -->
 
 <div class="main-content">
 <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb"></nav>
@@ -784,6 +799,26 @@ Logout
   </aside>
 </div>
 
+<section class="open-items-page" id="open-items-page" hidden>
+  <nav class="project-nav-bar" aria-label="Open items sections">
+    <div class="project-nav-tabs">
+      <button class="project-nav-tab" type="button" data-open-tab="deliverables">
+        Deliverables <span class="tab-count">03</span>
+      </button>
+      <button class="project-nav-tab" type="button" data-open-tab="rfis">
+        RFIs <span class="tab-count">06</span>
+      </button>
+      <button class="project-nav-tab" type="button" data-open-tab="tasks">
+        Tasks <span class="tab-count">05</span>
+      </button>
+    </div>
+  </nav>
+
+  <section data-open-panel="deliverables" hidden><h2>Deliverables</h2></section>
+  <section data-open-panel="rfis" hidden><h2>RFIs</h2></section>
+  <section data-open-panel="tasks" hidden><h2>Tasks</h2></section>
+</section>
+
 <div class="dashboard-view" id="dashboard-view">
 <section class="greeting-card">
   <div class="greeting-text">
@@ -858,7 +893,7 @@ Logout
     </div>
   </div>
 
-  <div class="kpi-card">
+  <div class="kpi-card" data-open-items="tasks" tabindex="0" role="link">
     <div class="kpi-top">
       <div class="kpi-icon check">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -880,7 +915,7 @@ Logout
     </div>
     <strong>06</strong>
     <div class="kpi-bottom">
-      <span>Open Tasks</span>
+      <span>Open Items</span>
       <span class="kpi-tag negative">4 needs attention</span>
     </div>
   </div>
@@ -920,7 +955,8 @@ Logout
   </section>
 
   <div class="table-scroll">
-  <table class="data-table">
+ <table class="data-table" id="tasks-table">
+  
     <thead>
       <tr>
         <th scope="col" aria-label="Complete"></th>
@@ -1053,6 +1089,75 @@ Logout
     </article>
   </div>
   <p class="empty-projects" hidden>No projects match these filters.</p>
+</section>
+
+<section class="library-view" id="library-view" hidden>
+  <nav class="library-tabs" aria-label="Library sections">
+    <button class="library-tab active" type="button" aria-current="page">Policies</button>
+    <button class="library-tab" type="button" disabled>Learnings</button>
+    <button class="library-tab" type="button" disabled>BOQs</button>
+    <button class="library-tab" type="button" disabled>Approved Makes</button>
+    <button class="library-tab" type="button" disabled>MAS Library</button>
+    <button class="library-tab" type="button" disabled>Standard Drawings</button>
+    <button class="library-tab" type="button" disabled>Reference Books</button>
+    <button class="library-tab" type="button" disabled>Catalogues</button>
+  </nav>
+
+  <section class="policy-browser" aria-label="Policies">
+    <div class="policy-toolbar">
+      <div class="policy-controls">
+        <div class="policy-categories" role="group" aria-label="Filter policies by category">
+          <button class="policy-category active" type="button" data-policy-category="all" aria-pressed="true">All</button>
+          <button class="policy-category" type="button" data-policy-category="general" aria-pressed="false">General</button>
+          <button class="policy-category" type="button" data-policy-category="hvac" aria-pressed="false">HVAC</button>
+          <button class="policy-category" type="button" data-policy-category="phe" aria-pressed="false">PHE</button>
+          <button class="policy-category" type="button" data-policy-category="fire" aria-pressed="false">Fire</button>
+          <button class="policy-category" type="button" data-policy-category="electrical" aria-pressed="false">Electrical</button>
+        </div>
+        <div class="policy-filter-wrap">
+          <button class="policy-filter-button" type="button" aria-expanded="false" aria-controls="policy-filter-menu">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M6 10h8m-5 5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Filters
+          </button>
+          <div class="policy-filter-menu" id="policy-filter-menu" hidden>
+            <label for="policy-sort">Sort by</label>
+            <select id="policy-sort">
+              <option value="updated">Last updated</option>
+              <option value="name">Document name</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <label class="policy-search">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="policy-search" type="search" aria-label="Search policies" placeholder="Search policies...">
+      </label>
+    </div>
+
+    <div class="policy-table-scroll">
+      <table class="policy-table">
+        <thead>
+          <tr>
+            <th scope="col">Policy No.</th>
+            <th scope="col">Document Name</th>
+            <th scope="col">Version</th>
+            <th scope="col">Last Updated</th>
+          </tr>
+        </thead>
+        <tbody id="policy-list">
+          <tr data-policy-category="hvac" data-updated="2026-07-15"><td>MEP-04</td><td><strong>HVAC Design Standards &amp; Guidelines</strong><small>4.2 MB · 24 Pages</small></td><td>v3.2</td><td>15 July 2026</td></tr>
+          <tr data-policy-category="fire" data-updated="2026-07-10"><td>MEP-05</td><td><strong>Standards for Firefighting and Fire Alarm Systems</strong><small>4.2 MB · 24 Pages</small></td><td>v2.1</td><td>10 July 2026</td></tr>
+          <tr data-policy-category="phe" data-updated="2026-07-08"><td>MEP-08</td><td><strong>Guidelines for Plumbing</strong><small>4.2 MB · 24 Pages</small></td><td>v4.0</td><td>08 July 2026</td></tr>
+          <tr data-policy-category="electrical" data-updated="2026-07-02"><td>MEP-08</td><td><strong>Standards for Electrical Design</strong><small>4.2 MB · 24 Pages</small></td><td>v1.8</td><td>02 July 2026</td></tr>
+          <tr data-policy-category="general" data-updated="2026-06-28"><td>MEP-08</td><td><strong>BMS Integration Guidelines</strong><small>4.2 MB · 24 Pages</small></td><td>v2.5</td><td>28 June 2026</td></tr>
+          <tr data-policy-category="general" data-updated="2026-06-25"><td>MEP-08</td><td><strong>Standards for Vertical Transportation</strong><small>4.2 MB · 24 Pages</small></td><td>v3.0</td><td>25 June 2026</td></tr>
+          <tr data-policy-category="general" data-updated="2026-06-20"><td>MEP-08</td><td><strong>Garbage Handling Guidelines</strong><small>4.2 MB · 24 Pages</small></td><td>v2.3</td><td>20 June 2026</td></tr>
+          <tr data-policy-category="phe" data-updated="2026-06-15"><td>MEP-08</td><td><strong>STP Guidelines</strong><small>4.2 MB · 24 Pages</small></td><td>v1.5</td><td>15 June 2026</td></tr>
+        </tbody>
+      </table>
+      <p class="policy-empty" id="policy-empty" hidden>No policies match your search.</p>
+    </div>
+  </section>
 </section>
 
 <section class="overview-page" id="overview-page" hidden>
@@ -1280,7 +1385,7 @@ Logout
       Tasks</button>
 
       <!-- RFIs Button -->
-    <button class="project-nav-tab" type="button">
+    <button class="project-nav-tab" type="button" data-project-view="rfis">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
   <g clip-path="url(#clip0_958_4160)">
     <path d="M5.33301 5.33337C5.33301 4.80294 5.57884 4.29423 6.01643 3.91916C6.45401 3.54409 7.0475 3.33337 7.66634 3.33337H8.33301C8.95185 3.33337 9.54534 3.54409 9.98292 3.91916C10.4205 4.29423 10.6663 4.80294 10.6663 5.33337C10.6909 5.76621 10.5741 6.1953 10.3337 6.55602C10.0932 6.91674 9.74199 7.18956 9.33301 7.33337C8.92402 7.52513 8.57285 7.88888 8.33237 8.36984C8.09188 8.8508 7.97513 9.42292 7.99967 10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
@@ -1588,6 +1693,60 @@ Logout
   <footer class="project-task-pagination">Page 1 of 1</footer>
 </section>
 
+<section class="project-tasks-view project-rfis-view" id="project-rfis-view" hidden aria-label="Project RFIs">
+  <div class="project-task-toolbar">
+    <div class="task-priority-filters" role="group" aria-label="Filter RFIs by status">
+      <button class="task-priority-filter is-active" type="button" data-rfi-status="all" aria-pressed="true">All</button>
+      <button class="task-priority-filter" type="button" data-rfi-status="in-progress" aria-pressed="false">In Progress</button>
+      <button class="task-priority-filter" type="button" data-rfi-status="delayed" aria-pressed="false">Delayed</button>
+      <button class="task-priority-filter" type="button" data-rfi-status="completed" aria-pressed="false">Completed</button>
+    </div>
+
+    <div class="task-advanced-filter-wrap">
+      <button class="task-advanced-filter-button" type="button" id="rfi-filter-btn" aria-expanded="false" aria-controls="rfi-advanced-filters">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5h14M6 10h8m-5 5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Filters
+      </button>
+      <div class="task-advanced-filters" id="rfi-advanced-filters" hidden>
+        <label for="rfi-discipline-filter">Discipline</label>
+        <select id="rfi-discipline-filter">
+          <option value="all">All disciplines</option>
+          <option>Electrical</option>
+          <option>Firefighting</option>
+          <option>Plumbing</option>
+          <option>HVAC</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="project-task-search">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="project-rfi-search" type="search" aria-label="Search RFIs" placeholder="Search rfis by title,Id...">
+    </label>
+
+    <button class="project-task-add" type="button" id="project-rfi-download">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Download RFI
+    </button>
+  </div>
+
+  <div class="project-task-table-scroll">
+    <table class="data-table project-task-table oi-table rfi-table">
+      <thead><tr>
+        <th scope="col">RFI ID</th>
+        <th scope="col">Query</th>
+        <th scope="col">Wing No.</th>
+        <th scope="col">Impact</th>
+        <th scope="col">Discipline</th>
+        <th scope="col">Raised By</th>
+        <th scope="col">Action</th>
+      </tr></thead>
+      <tbody id="project-rfi-list"></tbody>
+    </table>
+  </div>
+  <footer class="project-task-pagination">Page 1 of 1</footer>
+</section>
+
 </section>
 
 <!--RFIs Table-->
@@ -1655,7 +1814,11 @@ Logout
   </div>
 
   <div class="deliverables-scroll">
-    <table class="data-table" id="deliverables-table">
+    <table class="data-table aligned-table" id="deliverables-table">
+  <colgroup>
+    <col class="col-check"><col class="col-id"><col class="col-main"><col class="col-project">
+    <col class="col-status"><col class="col-due"><col class="col-person"><col class="col-action">
+  </colgroup>
       <thead>
         <tr>
           <th scope="col" aria-label="Complete"></th>
@@ -1770,7 +1933,7 @@ Logout
 <!--MEETINGS SECTION-->
 <section class="schedule">
   <div class="rail-section-title">
-    <h3>Your Schedule</h3>
+    <h3>Your Schedule - Today</h3>
     <a href="#" class="rail-view-all">View All ↗</a>
   </div>
   <div class="schedule-list" id="schedule-list"></div>
