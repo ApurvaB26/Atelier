@@ -850,7 +850,7 @@ Logout
     </header>
     <div class="drawer-body" id="record-drawer-body"></div>
     <input class="visually-hidden" id="record-attachment-input" type="file" multiple tabindex="-1" aria-hidden="true">
-    <footer class="drawer-footer">
+    <footer class="drawer-footer" id="record-drawer-footer">
       <button class="submit-project-btn drawer-save" type="button" data-record-save>Save Changes</button>
       <button class="task-discard" type="button" data-close-record-drawer>Discard</button>
     </footer>
@@ -1250,8 +1250,8 @@ Logout
     <div class="policy-toolbar">
       <div class="policy-categories makes-categories" role="group" aria-label="Filter makes by discipline">
         <button class="policy-category active" type="button" data-makes-category="all" aria-pressed="true">All</button>
-        <button class="policy-category" type="button" data-makes-category="plumbing" aria-pressed="false">Plumbing</button>
-        <button class="policy-category" type="button" data-makes-category="firefighting" aria-pressed="false">Firefighting</button>
+        <button class="policy-category" type="button" data-makes-category="plumbing" aria-pressed="false">PHE</button>
+        <button class="policy-category" type="button" data-makes-category="firefighting" aria-pressed="false">Fire</button>
         <button class="policy-category" type="button" data-makes-category="hvac" aria-pressed="false">HVAC</button>
         <button class="policy-category" type="button" data-makes-category="electrical" aria-pressed="false">Electrical</button>
       </div>
@@ -1801,7 +1801,7 @@ Logout
       <span class="toolbar-label">Group by</span>
       <button class="task-priority-filter is-active" type="button" data-tracker-group="tower" aria-pressed="true">Tower</button>
       <button class="task-priority-filter" type="button" data-tracker-group="stage" aria-pressed="false">Stage</button>
-      <button class="task-priority-filter" type="button" data-tracker-group="department" aria-pressed="false">Department</button>
+      <button class="task-priority-filter" type="button" data-tracker-group="department" aria-pressed="false">Discpline</button>
       <button class="task-priority-filter" type="button" data-tracker-group="floor" aria-pressed="false">Floor</button>
     </div>
     <span class="oi-divider"></span>
@@ -1837,30 +1837,32 @@ Logout
   <div class="project-task-toolbar">
     <div class="task-priority-filters" role="group" aria-label="Filter transmittals by status">
       <button class="task-priority-filter is-active" type="button" data-transmittal-status="all" aria-pressed="true">All</button>
-      <button class="task-priority-filter" type="button" data-transmittal-status="pending" aria-pressed="false">Awaiting acknowledgement</button>
-      <button class="task-priority-filter" type="button" data-transmittal-status="acknowledged" aria-pressed="false">Acknowledged</button>
-      <button class="task-priority-filter" type="button" data-transmittal-status="returned" aria-pressed="false">Returned</button>
+      <button class="task-priority-filter" type="button" data-transmittal-status="pending" aria-pressed="false">Pending</button>
+      <button class="task-priority-filter" type="button" data-transmittal-status="sent" aria-pressed="false">Sent</button>
     </div>
     <label class="project-task-search">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <input id="transmittal-search" type="search" aria-label="Search transmittals" placeholder="Search transmittals...">
+      <input id="transmittal-search" type="search" aria-label="Search transmittals" placeholder="Search transmittal, wing, drawing...">
     </label>
     <button class="project-task-add" type="button" data-project-action="transmittal"><span aria-hidden="true">+</span> Create Transmittal</button>
   </div>
-  <div class="project-task-table-scroll">
+  <div class="project-task-table-scroll transmittal-table-scroll">
     <table class="data-table project-task-table oi-table transmittal-table">
       <thead><tr>
-        <th scope="col">TR No.</th>
-        <th scope="col">Documents</th>
-        <th scope="col">To</th>
-        <th scope="col">Purpose</th>
-        <th scope="col">Sent</th>
+        <th scope="col">Transmittal No.</th>
+        <th scope="col">Wing No.</th>
+        <th scope="col">No. of Drawings</th>
+        <th scope="col">No. of Copies</th>
+        <th scope="col">Source</th>
+        <th scope="col">Recipient</th>
         <th scope="col">Status</th>
-        <th scope="col">Action</th>
+        <th scope="col">Sent Date</th>
+        <th scope="col" class="col-action">Action</th>
       </tr></thead>
       <tbody id="transmittal-list"></tbody>
     </table>
     <p class="policy-empty" id="transmittal-empty" hidden>No transmittals match these filters.</p>
+    <footer class="project-task-pagination transmittal-pagination">Page 1 of 1</footer>
   </div>
 </section>
 
@@ -2231,6 +2233,23 @@ Logout
   </section>
 </section>
 
+<!--DOCUMENT PAGE (BOQs, library documents, project files, transmittal PDFs)-->
+<section class="page-view doc-view" id="doc-view" hidden aria-labelledby="doc-view-title">
+  <header class="doc-view-head">
+    <button class="doc-back" type="button" data-doc-back>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <div class="doc-view-titles">
+      <p class="doc-view-kicker" id="doc-view-kicker"></p>
+      <h1 id="doc-view-title"></h1>
+      <p class="doc-view-meta" id="doc-view-meta"></p>
+    </div>
+    <div class="page-heading-actions" id="doc-view-actions"></div>
+  </header>
+  <div class="doc-view-body" id="doc-view-body"></div>
+</section>
+
 <!--RFIs Table-->
 <section class="panel" id="dashboard-rfi-panel">
   <div class="panel-header">
@@ -2286,7 +2305,7 @@ Logout
 
 <section class="panel" id="dashboard-deliverables-panel">
   <div class="panel-header">
-    <h2>Project Deliverables</h2>
+    <h2>Project Deliverables - Today & Overdue</h2>
     <div class="panel-actions">
       <button class="add-btn" type="button" aria-label="Add deliverable" data-project-action="add-deliverable">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7.99967 3.33301V12.6663M3.33301 7.99967H12.6663" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

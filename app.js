@@ -2347,8 +2347,11 @@ function syncHash(path) {
 }
 
 function renderRoute(path) {
-  const [page, sub] = path.split("/");
+  const [page, sub, extra] = path.split("/");
   switch (page) {
+    case "doc":
+      showDocument(sub, extra);
+      break;
     case "projects":
     case "reporting":
       setCurrentView(page);
@@ -3248,41 +3251,154 @@ document.addEventListener("click", (e) => {
   if (e.target.closest("[data-tracker-template]")) downloadText("deliverable-tracker-template.csv", toCsv(trackerTemplate));
 });
 
-/* PROJECT TRANSMITTALS */
-const transmittalStatuses = {
-  pending: { label: "Awaiting acknowledgement", cls: "pending" },
-  acknowledged: { label: "Acknowledged", cls: "completed" },
-  returned: { label: "Returned with comments", cls: "delayed" }
-};
+/* PROJECT TRANSMITTALS
+   IFC uploads in Files draft a transmittal automatically; nothing is sent until someone reviews it. */
+const transmittalWings = ["Wing 25", "Wing 32", "Signet B", "Tower 16", "Tower 26", "MLCP", "UGT 2"];
+const transmittalSources = ["DSG", "Urja", "Verdant Systems", "In-house"];
+const transmittalPurposes = ["For construction", "For approval", "For information", "For tender"];
 const transmittals = [
-  { no: "TR-001", docs: ["Concept MEP design report", "Terrace lightning protection layout"], to: "Verdant Systems", purpose: "For approval", sent: daysFromNow(-38), status: "acknowledged", by: "Apurva Bhadange", note: "Concept stage MEP report for consultant sign-off." },
-  { no: "TR-002", docs: ["Fire pump room layout", "Plumbing single line diagram R3"], to: "Verdant Systems", purpose: "For approval", sent: daysFromNow(-3), status: "pending", by: "Apurva Bhadange", note: "" }
+  {
+    no: "TR-235", wing: "Wing 25", source: "DSG", recipient: "Pravin Kolapte", recipientRole: "Site Manager", purpose: "For construction",
+    copies: { color: 1, bw: 6 }, status: "pending", sent: null, created: daysFromNow(-1), origin: "ifc", by: "Apurva Bhadange", remarks: "",
+    drawings: [
+      { no: "LB-PH-W25-110", name: "Plumbing single line diagram", rev: "R3" },
+      { no: "LB-PH-W25-111", name: "Toilet plumbing details — typical", rev: "R1" },
+      { no: "LB-FF-W25-201", name: "Sprinkler layout — typical floor", rev: "R2" },
+      { no: "LB-EL-W25-101", name: "Electrical lighting layout", rev: "Rev C" }
+    ]
+  },
+  {
+    no: "TR-236", wing: "Signet B", source: "Urja", recipient: "Pravin Kolapte", recipientRole: "Site Manager", purpose: "For construction",
+    copies: { color: 1, bw: 6 }, status: "pending", sent: null, created: daysFromNow(-1), origin: "ifc", by: "Apurva Bhadange", remarks: "",
+    drawings: [
+      { no: "SG-HV-B-301", name: "Ventilation layout — basement 1", rev: "R1" },
+      { no: "SG-HV-B-302", name: "Ventilation layout — basement 2", rev: "R1" },
+      { no: "SG-EL-B-120", name: "LT panel room layout", rev: "R0" },
+      { no: "SG-EL-B-121", name: "Cable tray routing — podium", rev: "R2" },
+      { no: "SG-FF-B-210", name: "Fire pump room layout", rev: "R4" },
+      { no: "SG-PH-B-112", name: "Drainage layout — podium", rev: "R1" }
+    ]
+  },
+  {
+    no: "TR-237", wing: "Wing 32", source: "DSG", recipient: "Pravin Kolapte", recipientRole: "Site Manager", purpose: "For construction",
+    copies: { color: 1, bw: 6 }, status: "sent", sent: "2026-10-07", created: "2026-10-06", origin: "ifc", by: "Apurva Bhadange", remarks: "",
+    drawings: [
+      { no: "LB-EL-W32-101", name: "Electrical lighting layout", rev: "R2" },
+      { no: "LB-FF-W32-201", name: "Fire tender layout", rev: "R1" }
+    ]
+  }
 ];
 let transmittalFilter = "all";
 const transmittalSearch = document.getElementById("transmittal-search");
+
+const transmittalsSentNewestFirst = () => transmittals.filter((t) => t.status === "sent" && t.recipient).sort((a, b) => b.sent.localeCompare(a.sent));
+
+// Recipient, source and copies come from what was last sent for the same wing,
+// then from what is sent most often; with no history the user fills them in
+function transmittalDefaults(wing) {
+  const sent = transmittalsSentNewestFirst();
+  const sameWing = sent.find((t) => t.wing === wing);
+  const counts = new Map();
+  sent.forEach((t) => counts.set(t.recipient, (counts.get(t.recipient) || 0) + 1));
+  const mostUsed = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const basis = sameWing || sent.find((t) => t.recipient === mostUsed?.[0]);
+  return {
+    recipient: basis?.recipient || "",
+    recipientRole: basis?.recipientRole || "",
+    source: basis?.source || "DSG",
+    copies: basis ? { ...basis.copies } : { color: 1, bw: 6 },
+    basis
+  };
+}
+
+const recentRecipients = () => [...new Set(transmittalsSentNewestFirst().map((t) => t.recipient))].slice(0, 4);
+
+function nextTransmittalNo() {
+  return `TR-${Math.max(0, ...transmittals.map((t) => Number(t.no.replace(/\D/g, "")) || 0)) + 1}`;
+}
+
+// Drawing number, name and revision are read from the file name (and matched against the tracker)
+function drawingFromFile(fileName, wing, index) {
+  const base = fileName.replace(/\.[^.]+$/, "");
+  const revMatch = base.match(/[_\s-](R(?:ev)?)[\s_-]?([A-Z]|\d{1,2})$/i);
+  const rev = revMatch ? (/\d/.test(revMatch[2]) ? `R${revMatch[2]}` : `Rev ${revMatch[2].toUpperCase()}`) : "R0";
+  const readable = (revMatch ? base.slice(0, revMatch.index) : base).replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+  const numberMatch = base.match(/[A-Z]{2,}(?:-[A-Z0-9]+){2,}/);
+  const compact = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const tracked = deliverableTracker.find((item) => compact(readable).includes(compact(item.title)) || compact(item.title).includes(compact(readable)));
+  const wingCode = wing.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  return {
+    no: numberMatch?.[0] || tracked?.docNo || `${wingCode}-DWG-${String(index + 1).padStart(3, "0")}`,
+    name: tracked?.title || readable.replace(numberMatch?.[0] || "", "").trim() || base,
+    rev
+  };
+}
+
+function draftTransmittalFromIfc(files, wing) {
+  const defaults = transmittalDefaults(wing);
+  const transmittal = {
+    no: nextTransmittalNo(),
+    wing,
+    source: defaults.source,
+    recipient: defaults.recipient,
+    recipientRole: defaults.recipientRole,
+    purpose: "For construction",
+    copies: defaults.copies,
+    status: "pending",
+    sent: null,
+    created: toDateInput(new Date()),
+    origin: "ifc",
+    by: profileState.name,
+    remarks: "",
+    drawings: files.map((file, index) => drawingFromFile(file.name, wing, index)),
+    activity: [
+      `Drafted automatically from an IFC upload (${files.length} drawing${files.length === 1 ? "" : "s"})`,
+      defaults.recipient ? `Recipient filled from history: ${defaults.recipient}` : "Recipient needed before sending"
+    ]
+  };
+  transmittals.push(transmittal);
+  renderTransmittals();
+  notifications.unshift({
+    id: `n-${transmittal.no}`, who: profileState.name, time: "Just now",
+    title: `${transmittal.no} drafted for ${wing}`,
+    body: `${files.length} IFC drawing${files.length === 1 ? "" : "s"} ready to review and send.`,
+    project: overviewPage.querySelector(".project-title").textContent, route: "project/transmittals", unread: true
+  });
+  renderNotifications();
+  return transmittal;
+}
+
+const pad2 = (value) => String(value).padStart(2, "0");
+const transmittalDate = (iso) => (iso ? formatLongDate(iso).replace(/^(\d+) (\w{3})\w* (\d+)$/, "$1 $2 $3") : "—");
+// Table style from the design: "07, Oct, 2026"
+const transmittalTableDate = (iso) => transmittalDate(iso).replace(/^(\d+) (\w+) (\d+)$/, "$1, $2, $3");
 
 function renderTransmittals() {
   const query = transmittalSearch.value.trim().toLocaleLowerCase();
   const visible = transmittals
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => (transmittalFilter === "all" || item.status === transmittalFilter)
-      && `${item.no} ${item.docs.join(" ")} ${item.to} ${item.purpose}`.toLocaleLowerCase().includes(query))
-    .reverse();
+      && `${item.no} ${item.wing} ${item.source} ${item.recipient} ${item.drawings.map((d) => `${d.no} ${d.name}`).join(" ")}`.toLocaleLowerCase().includes(query))
+    .sort((a, b) => a.item.no.localeCompare(b.item.no, undefined, { numeric: true }));
+
+  const sendIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>';
+  const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 
   document.getElementById("transmittal-list").innerHTML = visible.map(({ item, index }) => {
-    const status = transmittalStatuses[item.status];
-    const action = item.status === "pending"
-      ? oiAction("Remind")
-      : `<button class="comment-btn" type="button" data-row-action="open"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View</button>`;
+    const sent = item.status === "sent";
     return `
-      <tr class="project-task-row transmittal-row" data-transmittal-index="${index}" data-recipient="${escapeHtml(item.to)}" tabindex="0">
+      <tr class="project-task-row transmittal-row${sent ? " is-sent" : ""}" data-transmittal-index="${index}" tabindex="0">
         <td>${item.no}</td>
-        <td><strong>${escapeHtml(item.docs[0])}</strong><span class="row-subtitle">${item.docs.length > 1 ? `+ ${item.docs.length - 1} more document${item.docs.length > 2 ? "s" : ""}` : "1 document"}</span></td>
-        <td>${escapeHtml(item.to)}</td>
-        <td>${escapeHtml(item.purpose)}</td>
-        <td>${formatLongDate(item.sent)}</td>
-        <td><span class="task-state ${status.cls}">${status.label}</span></td>
-        <td>${action}</td>
+        <td><strong>${escapeHtml(item.wing)}</strong></td>
+        <td><strong>${pad2(item.drawings.length)}</strong></td>
+        <td><strong>${pad2(item.copies.color + item.copies.bw)}</strong> <small class="copies-split">(${item.copies.color} Color + ${item.copies.bw} B&amp;W)</small></td>
+        <td><strong>${escapeHtml(item.source)}</strong></td>
+        <td>${item.recipient ? `<strong>${escapeHtml(item.recipient)}</strong>` : '<span class="waiting-tag">Add recipient</span>'}</td>
+        <td><span class="tr-chip ${sent ? "is-sent" : "is-pending"}">${sent ? "Sent" : "Pending"}</span></td>
+        <td>${sent ? `<span class="tr-date">${transmittalTableDate(item.sent)}</span>` : '<span class="tr-dash">—</span>'}</td>
+        <td class="col-action">${sent
+          ? `<button class="comment-btn" type="button" data-row-action="open">${eyeIcon}View</button>`
+          : `<button class="comment-btn" type="button" data-row-action="open">${sendIcon}Review &amp; Send</button>`}</td>
       </tr>`;
   }).join("");
   document.getElementById("transmittal-empty").hidden = visible.length !== 0;
@@ -3302,6 +3418,206 @@ document.querySelectorAll("[data-transmittal-status]").forEach((chip) => {
   });
 });
 transmittalSearch.addEventListener("input", renderTransmittals);
+
+/* TRANSMITTAL PDF (built with jsPDF, loaded on first use) */
+let jsPdfPromise = null;
+function loadJsPdf() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  jsPdfPromise ||= new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    script.onload = () => resolve(window.jspdf.jsPDF);
+    script.onerror = () => {
+      jsPdfPromise = null;
+      script.remove();
+      reject(new Error("Couldn't load the PDF maker. Check your connection and try again."));
+    };
+    document.head.append(script);
+  });
+  return jsPdfPromise;
+}
+
+// PDF fonts only cover basic Latin, so swap typographic dashes and dots for plain ones
+const pdfText = (text) => String(text ?? "").replace(/[—–]/g, "-").replace(/·/g, "|").replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+const transmittalSubject = (t) => t.subject || `Issue of ${t.drawings.length} drawing${t.drawings.length === 1 ? "" : "s"} for ${t.wing}`;
+
+// What each issuing party is, printed after its name on the form: "DSG (MEP Consultant)"
+const sourceRoles = { DSG: "MEP Consultant", Urja: "Electrical Consultant", "Verdant Systems": "MEP Consultant", "In-house": "MEP Design" };
+const purposeRemarks = { "For construction": "IFC", "For approval": "APPROVAL", "For information": "INFO", "For tender": "TENDER" };
+const drawingRemark = (t, drawing) => drawing.remarks || (t.origin === "ifc" ? "IFC" : purposeRemarks[t.purpose] || "");
+
+// The open project, or the first one when a PDF or document is opened straight from a link
+const currentProjectName = () => {
+  const title = overviewPage.querySelector(".project-title").textContent;
+  return title === "Project name" ? document.querySelector("[data-project-card] h2").textContent : title;
+};
+
+// The transmittal form is laid out on a fixed character grid (Courier), like the site office template
+async function buildTransmittalPdf(t) {
+  const JsPDF = await loadJsPdf();
+  const doc = new JsPDF({ unit: "mm", format: "a4" });
+  const project = currentProjectName();
+  const width = 92; // characters per line: 9 pt Courier is 1.905 mm a character
+  const left = 17;
+  const lineHeight = 4.6;
+  let y = 18;
+
+  const fit = (text, size) => {
+    const value = pdfText(text);
+    return (value.length > size ? `${value.slice(0, size - 3)}...` : value).padEnd(size);
+  };
+  const line = (text = "", bold = false) => {
+    if (y > 283) {
+      doc.addPage();
+      y = 18;
+    }
+    doc.setFont("courier", bold ? "bold" : "normal");
+    doc.text(pdfText(text), left, y);
+    y += lineHeight;
+  };
+  const columns = (leftText, rightText, at = 48) => `${fit(leftText, at)}${pdfText(rightText)}`;
+  const spread = (leftText, rightText) => `${pdfText(leftText).padEnd(width - pdfText(rightText).length)}${pdfText(rightText)}`;
+  const issueDate = new Date(...(t.sent || toDateInput(new Date())).split("-").map((part, i) => Number(part) - (i === 1 ? 1 : 0)));
+  const dotted = `${pad2(issueDate.getDate())}.${pad2(issueDate.getMonth() + 1)}.${issueDate.getFullYear()}`;
+  const sent = t.status === "sent";
+  const copies = `${t.copies.color} CL + ${t.copies.bw} BW`;
+  const sourceRole = sourceRoles[t.source];
+
+  doc.setFontSize(9);
+  doc.setTextColor(28, 27, 27);
+  line("=".repeat(width));
+  y += 1;
+  line(spread(`${project.toUpperCase()} | TRANSMITTAL FORM`, `TRANSMITTAL No. : ${project.replace(/^lodha\s+/i, "").toUpperCase()} ${t.no.replace(/\D/g, "")}`), true);
+  line();
+  line("-".repeat(width));
+  line(columns("PROJECT DETAILS", "DISTRIBUTION / RECIPIENT"), true);
+  line(columns(`Project / Tower : ${t.wing}`, `To         : ${t.recipient || "-"}${t.recipientRole ? ` (${t.recipientRole})` : ""}`));
+  line(columns(`Issue Date      : ${dotted}`, `Source     : ${t.source}${sourceRole ? ` (${sourceRole})` : ""}`));
+  line("-".repeat(width));
+  line();
+  if (t.subject) {
+    line(`SUBJECT : ${t.subject}`, true);
+    line();
+  }
+  line(`LIST OF DRAWINGS / DOCUMENTS (${t.drawings.length} ITEM${t.drawings.length === 1 ? "" : "S"})`, true);
+  line();
+  line(`${"SR".padEnd(4)}${"DESCRIPTION".padEnd(36)}${"DRAWING NO.".padEnd(26)}${"REV".padEnd(6)}${"COPIES".padEnd(13)}REMARKS`, true);
+  line("-".repeat(width));
+  t.drawings.forEach((drawing, index) => {
+    line(`${pad2(index + 1).padEnd(4)}${fit(drawing.name, 35)} ${fit(drawing.no, 25)} ${fit(drawing.rev, 5)} ${fit(copies, 12)} ${pdfText(drawingRemark(t, drawing))}`);
+  });
+  line("-".repeat(width));
+  line();
+  if (t.remarks) {
+    line("REMARKS", true);
+    doc.splitTextToSize(pdfText(t.remarks), 172).forEach((part) => line(part));
+    line();
+  }
+  line("AUTHORIZATION & APPROVALS", true);
+  line(`Status         : ${sent ? "Approved & Sent" : "Pending Approval (Draft)"}`);
+  line(`Generated By   : ${t.origin === "ifc" ? "Auto-System (IFC Batch Upload)" : t.by}`);
+  line(columns(`Approved By    : ${sent ? t.approvedBy || t.by : profileState.name}`, `Date: [ ${transmittalDate(t.sent || toDateInput(new Date()))} ]`, 52));
+  line("=".repeat(width));
+  return doc;
+}
+
+async function downloadTransmittalPdf(t) {
+  try {
+    const doc = await buildTransmittalPdf(t);
+    doc.save(`${t.no}_${t.wing.replace(/\s+/g, "-")}.pdf`);
+    (t.activity ||= []).push(`PDF downloaded by ${profileState.name}`);
+    if (recordCtx?.data === t) rerenderRecordDrawer();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+// Edit what goes on the PDF; the changes are saved to the transmittal itself
+const pdfRowHtml = (drawing = { no: "", name: "", rev: "R0", remarks: "" }) => `
+  <tr data-pdf-row>
+    <td class="pdf-sr"></td>
+    <td><input data-pdf-key="name" value="${escapeHtml(drawing.name)}" aria-label="Description"></td>
+    <td><input data-pdf-key="no" value="${escapeHtml(drawing.no)}" aria-label="Drawing number"></td>
+    <td><input data-pdf-key="rev" value="${escapeHtml(drawing.rev)}" aria-label="Revision"></td>
+    <td><input data-pdf-key="remarks" value="${escapeHtml(drawing.remarks || "")}" aria-label="Remarks"></td>
+    <td><button class="pdf-remove" type="button" data-pdf-remove aria-label="Remove row">×</button></td>
+  </tr>`;
+
+function openTransmittalPdfEditor(t) {
+  openActionDialog({
+    title: `Edit ${t.no} PDF`,
+    subtitle: "Changes are saved to the transmittal and used for every PDF download.",
+    wide: true,
+    body: `
+      <div class="doc-viewer">
+        <div class="doc-viewer-bar"><span>Transmittal form · ${escapeHtml(t.wing)}</span><span>Click any text to change it</span></div>
+        <article class="doc-page pdf-edit">
+          <p class="doc-page-kicker">Transmittal form · ${escapeHtml(t.no)}</p>
+          <label class="pdf-field pdf-subject"><span>Subject (optional)</span><input data-pdf="subject" value="${escapeHtml(t.subject || "")}" placeholder="Printed above the drawing list"></label>
+          <div class="pdf-grid">
+            <label class="pdf-field"><span>To</span><input data-pdf="recipient" value="${escapeHtml(t.recipient)}" placeholder="Recipient name"></label>
+            <label class="pdf-field"><span>Role</span><input data-pdf="recipientRole" value="${escapeHtml(t.recipientRole || "")}" placeholder="e.g. Site Manager"></label>
+            <label class="pdf-field"><span>Source</span><input data-pdf="source" value="${escapeHtml(t.source)}"></label>
+            <label class="pdf-field"><span>Purpose</span><input data-pdf="purpose" value="${escapeHtml(t.purpose)}"></label>
+            <label class="pdf-field"><span>Colour copies</span><input data-pdf="color" type="number" min="0" value="${t.copies.color}"></label>
+            <label class="pdf-field"><span>B&amp;W copies</span><input data-pdf="bw" type="number" min="0" value="${t.copies.bw}"></label>
+          </div>
+          <table class="doc-page-table pdf-table">
+            <thead><tr><th>Sr</th><th>Description</th><th>Drawing No.</th><th>Rev</th><th>Remarks</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
+            <tbody>${t.drawings.map((drawing) => pdfRowHtml({ ...drawing, remarks: drawingRemark(t, drawing) })).join("")}</tbody>
+          </table>
+          <button class="drawer-add-action" type="button" data-pdf-add-row>+ Add drawing row</button>
+          <label class="pdf-field"><span>Remarks</span><textarea data-pdf="remarks" placeholder="Printed under the drawing list...">${escapeHtml(t.remarks)}</textarea></label>
+        </article>
+      </div>`,
+    submitLabel: "Save PDF Changes",
+    onSubmit() {
+      const get = (key) => actionFields.querySelector(`[data-pdf="${key}"]`).value.trim();
+      const drawings = Array.from(actionFields.querySelectorAll("[data-pdf-row]"), (tr) => {
+        const value = (key) => tr.querySelector(`[data-pdf-key="${key}"]`).value.trim();
+        return { no: value("no"), name: value("name"), rev: value("rev") || "R0", remarks: value("remarks") };
+      }).filter((drawing) => drawing.name || drawing.no);
+      if (!drawings.length) {
+        setActionError("Keep at least one drawing on the transmittal.");
+        return false;
+      }
+      Object.assign(t, {
+        subject: get("subject"),
+        recipient: get("recipient"),
+        recipientRole: get("recipientRole"),
+        purpose: get("purpose") || t.purpose,
+        source: get("source") || t.source,
+        remarks: get("remarks"),
+        copies: { color: Math.max(0, Number(get("color")) || 0), bw: Math.max(0, Number(get("bw")) || 0) },
+        drawings
+      });
+      (t.activity ||= []).push(`PDF details edited by ${profileState.name}`);
+      renderTransmittals();
+      if (recordCtx?.data === t) rerenderRecordDrawer();
+      refreshTransmittalPreview(t);
+      showToast(`${t.no} PDF updated.`);
+    }
+  });
+  numberPdfRows();
+}
+
+function numberPdfRows() {
+  actionFields.querySelectorAll("[data-pdf-row] .pdf-sr").forEach((cell, index) => { cell.textContent = pad2(index + 1); });
+}
+
+actionFields.addEventListener("click", (e) => {
+  if (e.target.closest("[data-pdf-add-row]")) {
+    const body = actionFields.querySelector(".pdf-table tbody");
+    body.insertAdjacentHTML("beforeend", pdfRowHtml());
+    numberPdfRows();
+    body.lastElementChild.querySelector("input").focus();
+  }
+  const remove = e.target.closest("[data-pdf-remove]");
+  if (remove) {
+    remove.closest("tr").remove();
+    numberPdfRows();
+  }
+});
 
 /* PROJECT MENU ACTIONS: Add Deliverable / Create Transmittal / Add Member / Schedule Meeting */
 const disciplineOptions = ["Electrical", "Plumbing", "HVAC", "Fire", "Coordinated", "General"];
@@ -3362,30 +3678,66 @@ function openAddDeliverableDialog(target) {
 }
 
 function openTransmittalDialog() {
-  const documents = deliverableTracker.filter((item) => item.status !== "Approved").map((item) => item.title);
+  const firstWing = transmittalWings[0];
+  const defaults = transmittalDefaults(firstWing);
+  const drawingFiles = projectFiles.filter((file) => /\.(dwg|dxf|pdf|rvt)$/i.test(file.name)).map((file) => file.name);
   openActionDialog({
     title: "Create Transmittal",
-    subtitle: overviewPage.querySelector(".project-title").textContent,
+    subtitle: "Saved as Pending — review and send it from the Transmittals list.",
     fields: [
       { type: "row", fields: [
-        { name: "to", label: "To", type: "select", options: consultantOptions },
-        { name: "purpose", label: "Purpose", type: "select", options: ["For approval", "For information", "For construction", "For tender"] }
+        { name: "wing", label: "Wing", type: "select", options: transmittalWings, value: firstWing },
+        { name: "source", label: "Source", type: "select", options: transmittalSources, value: defaults.source }
       ] },
-      { name: "documents", label: "Documents", type: "checklist", required: true, options: documents.slice(0, 8) },
-      { name: "note", label: "Cover note", type: "textarea", placeholder: "Anything the recipient should know..." }
+      { name: "recipient", label: "Recipient", value: defaults.recipient, placeholder: "Who receives the drawings" },
+      { type: "row", fields: [
+        { name: "color", label: "Colour copies", type: "number", min: 0, value: defaults.copies.color },
+        { name: "bw", label: "B&W copies", type: "number", min: 0, value: defaults.copies.bw }
+      ] },
+      { name: "files", label: "Drawings from Files", type: "checklist", options: drawingFiles }
     ],
-    submitLabel: "Send Transmittal",
+    submitLabel: "Create & Review",
     onSubmit(values) {
-      if (!values.documents.length) {
-        setActionError("Pick at least one document to send.");
+      if (!values.files.length) {
+        setActionError("Pick at least one drawing to send.");
         return false;
       }
-      const reference = `TR-${String(transmittals.length + 1).padStart(3, "0")}`;
-      transmittals.push({ no: reference, docs: values.documents, to: values.to, purpose: values.purpose, sent: toDateInput(new Date()), status: "pending", by: profileState.name, note: values.note });
+      const transmittal = {
+        no: nextTransmittalNo(),
+        wing: values.wing,
+        source: values.source,
+        recipient: values.recipient,
+        recipientRole: transmittalsSentNewestFirst().find((item) => item.recipient === values.recipient)?.recipientRole || "",
+        purpose: "For construction",
+        copies: { color: Number(values.color) || 0, bw: Number(values.bw) || 0 },
+        status: "pending",
+        sent: null,
+        created: toDateInput(new Date()),
+        origin: "manual",
+        by: profileState.name,
+        remarks: "",
+        drawings: values.files.map((name, index) => drawingFromFile(name, values.wing, index)),
+        activity: [`Created by ${profileState.name}`]
+      };
+      transmittals.push(transmittal);
       renderTransmittals();
-      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} sent <b>${reference}</b> to ${escapeHtml(values.to)}`, tag: `${values.documents.length} docs` });
-      showToast(`${reference} sent to ${values.to} ${values.purpose.toLowerCase()}.`);
+      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} drafted <b>${transmittal.no}</b> for ${escapeHtml(values.wing)}`, tag: `${values.files.length} dwgs` });
+      // Open the new draft for review once this dialog has closed
+      setTimeout(() => {
+        if (overviewPage.hidden || projectSubViews.transmittals.hidden) openProject(overviewPage.querySelector(".project-title").textContent, "transmittals");
+        const row = document.querySelector(`#transmittal-list tr[data-transmittal-index="${transmittals.indexOf(transmittal)}"]`);
+        if (row) openTransmittalDrawer(row);
+      });
     }
+  });
+
+  // Recipient, source and copies follow the chosen wing's history
+  document.getElementById("action-wing").addEventListener("change", (e) => {
+    const wingDefaults = transmittalDefaults(e.target.value);
+    if (!document.getElementById("action-recipient").value || document.getElementById("action-recipient").value === defaults.recipient) {
+      document.getElementById("action-recipient").value = wingDefaults.recipient;
+    }
+    document.getElementById("action-source").value = wingDefaults.source;
   });
 }
 
@@ -3558,16 +3910,7 @@ function downloadProjectFile(file) {
 }
 
 function openFilePreview(file) {
-  const isImage = file.file && file.file.type.startsWith("image/");
-  const preview = isImage ? `<img class="action-preview" src="${URL.createObjectURL(file.file)}" alt="Preview of ${escapeHtml(file.name)}">` : "";
-  openActionDialog({
-    title: file.name,
-    subtitle: file.location,
-    body: preview + detailList([["Type", fileKind(file.name).label], ["Stage", file.stage], ["Size", file.size], ["Uploaded by", file.by], ["Uploaded", file.when]]),
-    submitLabel: "Download",
-    cancelLabel: "Close",
-    onSubmit() { downloadProjectFile(file); }
-  });
+  showDocument("file", projectFiles.indexOf(file));
 }
 
 document.addEventListener("click", (e) => {
@@ -3583,17 +3926,39 @@ document.addEventListener("click", (e) => {
   else downloadProjectFile(file);
 });
 
+// Uploads ask which wing and stage they belong to; IFC drawings draft a transmittal for that wing
 overviewUploadInput.addEventListener("change", () => {
   const added = Array.from(overviewUploadInput.files);
-  if (!added.length) return;
-  const uploader = `${firstName(profileState.name)} ${profileState.name.split(/\s+/)[1]?.[0] || ""}.`.replace(/ \.$/, "");
-  added.reverse().forEach((file) => {
-    projectFiles.unshift({ name: file.name, stage: "WIP", location: overviewPage.querySelector(".project-title").textContent, size: formatFileSize(file.size), by: uploader, when: "Just Now", file });
-  });
-  renderFiles();
-  prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} uploaded <b>${escapeHtml(added.length === 1 ? added[0].name : `${added.length} files`)}</b>`, tag: "Files" });
   overviewUploadInput.value = "";
-  showToast(added.length === 1 ? `${added[0].name} uploaded.` : `${added.length} files uploaded.`);
+  if (!added.length) return;
+
+  openActionDialog({
+    title: `Upload ${added.length === 1 ? added[0].name : `${added.length} files`}`,
+    subtitle: overviewPage.querySelector(".project-title").textContent,
+    body: `<p class="action-dialog-text">Uploading as <b>IFC</b> drafts a transmittal for the wing automatically. Nothing is sent until you approve it.</p>`,
+    fields: [
+      { type: "row", fields: [
+        { name: "wing", label: "Wing / Tower", type: "select", options: transmittalWings },
+        { name: "stage", label: "Stage", type: "select", options: ["WIP", "DD", "Tender", "IFC", "VFC", "As-built"], value: "IFC" }
+      ] }
+    ],
+    submitLabel: "Upload",
+    onSubmit(values) {
+      const uploader = `${firstName(profileState.name)} ${profileState.name.split(/\s+/)[1]?.[0] || ""}.`.replace(/ \.$/, "");
+      [...added].reverse().forEach((file) => {
+        projectFiles.unshift({ name: file.name, stage: values.stage, location: values.wing, size: formatFileSize(file.size), by: uploader, when: "Just Now", file });
+      });
+      renderFiles();
+      prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} uploaded <b>${escapeHtml(added.length === 1 ? added[0].name : `${added.length} files`)}</b> (${values.stage})`, tag: escapeHtml(values.wing) });
+
+      if (values.stage === "IFC") {
+        const transmittal = draftTransmittalFromIfc(added, values.wing);
+        showToast(`Uploaded. ${transmittal.no} drafted for ${values.wing} — review and send it from Transmittals.`);
+      } else {
+        showToast(added.length === 1 ? `${added[0].name} uploaded.` : `${added.length} files uploaded.`);
+      }
+    }
+  });
 });
 
 document.querySelectorAll("[data-file-type]").forEach((chip) => {
@@ -3771,7 +4136,7 @@ const projectActivity = [
   { initials: "NM", tone: "avatar-brown", text: "NM completed <b>Drainage calculations Tower 16</b>", when: "Yesterday", tag: "Tower 16" },
   { initials: "RS", tone: "avatar-muted", text: "RS approved <b>Fire pump room layout</b>", when: "Yesterday", tag: "UGT 2" },
   { initials: "SP", tone: "avatar-slate", text: "SP moved <b>T-12 Approve Revised Typical Floor</b> to In Progress", when: "2 days ago", tag: "Wing 25" },
-  { initials: "AB", tone: "", text: "AB sent <b>TR-002</b> to Verdant Systems", when: "3 days ago", tag: "Tower 26" },
+  { initials: "AB", tone: "", text: "AB sent <b>TR-237</b> to Pravin Kolapte", when: "3 days ago", tag: "Tower 26" },
   { initials: "RK", tone: "avatar-brown", text: "RK uploaded <b>Plumbing single line diagram R3</b>", when: "4 days ago", tag: "Wing 25" },
   { initials: "SR", tone: "avatar-muted", text: "SR closed <b>RFI-211 infra fire layout</b>", when: "Last week", tag: "Tower 16" },
   { initials: "NK", tone: "avatar-slate", text: "NK scheduled <b>MEP Coordination Review</b>", when: "Last week", tag: "MLCP" },
@@ -3918,56 +4283,166 @@ function setLibraryTab(key) {
 }
 
 function openLibraryDocument(row) {
-  const doc = libraryTabs[currentLibraryTab].docs[Number(row.dataset.docIndex)];
-  if (currentLibraryTab === "policies") {
-    openPolicyViewer(doc);
-    return;
-  }
-  openActionDialog({
-    title: doc.name,
-    subtitle: `${libraryTabs[currentLibraryTab].label} · ${doc.no}`,
-    body: detailList([["Version", doc.version], ["Last updated", formatLongDate(doc.updated)], ["Details", doc.meta], ["Discipline", doc.category.toUpperCase()]]),
-    submitLabel: "Download",
-    cancelLabel: "Close",
-    onSubmit() { showToast(`Downloading ${doc.no} — ${doc.name}…`); }
-  });
+  showDocument("library", `${currentLibraryTab}-${row.dataset.docIndex}`);
 }
 
-// Policies open in a read-only viewer: no download or print
-function openPolicyViewer(doc) {
-  const pages = Number((doc.meta.match(/(\d+)\s*Pages/i) || [])[1]) || 1;
-  openActionDialog({
-    title: doc.name,
-    subtitle: `${doc.no} · ${doc.version} · Updated ${formatLongDate(doc.updated)}`,
-    wide: true,
-    body: `
-      <div class="doc-viewer">
-        <div class="doc-viewer-bar">
-          <span>Page 1 of ${pages}</span>
-          <span class="doc-viewer-lock">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-            View only — policies can't be downloaded or printed
-          </span>
-        </div>
-        <article class="doc-page" aria-label="${escapeHtml(doc.name)}, page 1">
-          <p class="doc-page-kicker">MEP Policy · ${escapeHtml(doc.no)}</p>
-          <h3>${escapeHtml(doc.name)}</h3>
-          <p class="doc-page-meta">Version ${escapeHtml(doc.version)} · Effective ${formatLongDate(doc.updated)} · Discipline: ${escapeHtml(doc.category.toUpperCase())}</p>
-          <h4>1. Purpose</h4>
-          <p>Sets out the minimum design and documentation requirements covered by this policy, so every project applies them the same way.</p>
-          <h4>2. Scope</h4>
-          <p>Applies to all towers, podiums, basements and MLCPs at concept, design development, GFC and VFC stages, for in-house teams and appointed consultants.</p>
-          <h4>3. Revision history</h4>
-          <table class="doc-page-table">
-            <thead><tr><th>Version</th><th>Date</th><th>Change</th></tr></thead>
-            <tbody><tr><td>${escapeHtml(doc.version)}</td><td>${formatLongDate(doc.updated)}</td><td>Current issue</td></tr></tbody>
-          </table>
-          <p class="doc-page-note">Sample page — the policy document itself will display here once documents are connected.</p>
-        </article>
-      </div>`,
-    submitLabel: null,
-    cancelLabel: "Close"
+const lockIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
+// Sample first page of a library document until the real files are connected
+function libraryPageHtml(doc, tabKey) {
+  const kicker = tabKey === "policies" ? "MEP Policy" : libraryTabs[tabKey].label;
+  return `
+    <article class="doc-page" aria-label="${escapeHtml(doc.name)}, page 1">
+      <p class="doc-page-kicker">${escapeHtml(kicker)} · ${escapeHtml(doc.no)}</p>
+      <h3>${escapeHtml(doc.name)}</h3>
+      <p class="doc-page-meta">Version ${escapeHtml(doc.version)} · Effective ${formatLongDate(doc.updated)} · Discipline: ${escapeHtml(doc.category.toUpperCase())}</p>
+      <h4>1. Purpose</h4>
+      <p>Sets out the minimum design and documentation requirements covered by this document, so every project applies them the same way.</p>
+      <h4>2. Scope</h4>
+      <p>Applies to all towers, podiums, basements and MLCPs at concept, design development, GFC and VFC stages, for in-house teams and appointed consultants.</p>
+      <h4>3. Revision history</h4>
+      <table class="doc-page-table">
+        <thead><tr><th>Version</th><th>Date</th><th>Change</th></tr></thead>
+        <tbody><tr><td>${escapeHtml(doc.version)}</td><td>${formatLongDate(doc.updated)}</td><td>Current issue</td></tr></tbody>
+      </table>
+      <p class="doc-page-note">Sample page — the document itself will display here once documents are connected.</p>
+    </article>`;
+}
+
+/* BOQs (Library tab): view the bill of quantities like the spreadsheet, and download it as Excel */
+const boqSheets = {
+  "BOQ-PH-05": [
+    {
+      bill: "Bill No.1 - Drainage Installations",
+      notes: [
+        "Include for the supply, complete installation, Testing & Commissioning as detailed in the specifications, Drawings and as per approved make list to the complete satisfaction and approval of the Engineer and all concerned Statutory Authorities and under the following sections.",
+        "Pipe work of waste, soil, condensate, vent, rainwater etc. including fittings, bends, elbows, rodding eyes/cleanout, end caps, supports, accessories etc. complete. All drainage outlet in toilet/utility/kitchen/deck area, drainage pipe shall be extended by 200mm from finished level."
+      ],
+      items: [
+        { no: "1", desc: "Waste Pipes Inside the Toilet of UPVC SWR Type-B solvent joint as per IS 13592 for pipes 75 mm and above, UPVC Class-3/4/5 as per IS 4985 for pipes Below 75 mm", unit: "", qty: "" },
+        { no: "2", desc: "Soil pipe of Low noise UPVC SWR solvent joint type for inside toilet - Underslung (2-4 LPS@20-26 dB respectively) as per standard EN1329, density (g/cm3): 1.3 to 1.9.\n110 mm dia Soil pipe (WC up-to vertical riser only)", unit: "RMT", qty: "" },
+        { no: "3", desc: "Soil pipe of UPVC SWR Type-B IS 13592 solvent joint for inside sunken toilet\n110 mm dia Soil pipe (WC up-to vertical riser)", unit: "RMT", qty: "" },
+        { no: "5.1", desc: "Soil, Waste, Rain water, Condensate drain down take pipe inside shaft of UPVC Class 3 solvent joint in accordance to IS4985", unit: "RMT", qty: "" },
+        { no: "6.1", desc: "C.I. hubless pipe for Soil, waste, rain water pipes in accordance to IS:1536 for last one floor and Suspended ceiling diversion", unit: "RMT", qty: "" },
+        { no: "7.1", desc: "HDPE PE100 PN 10 pipe for Soil, waste, rain water pipes in accordance to IS:14333 for last one floor and Suspended ceiling diversion", unit: "RMT", qty: "" },
+        { no: "8.1", desc: "HDPE PN10 coupler", unit: "NOS", qty: "" }
+      ]
+    }
+  ],
+  "BOQ-HV-03": [
+    {
+      bill: "Bill No.1 - VRF System (Typical Residential Floor)",
+      notes: ["Supply, installation, testing and commissioning of the VRF system complete with controls, as per specifications, drawings and the approved make list."],
+      items: [
+        { no: "1", desc: "VRF outdoor unit, heat pump, 16 HP", unit: "NOS", qty: "4" },
+        { no: "2", desc: "Ceiling cassette indoor unit, 1.5 TR", unit: "NOS", qty: "24" },
+        { no: "3", desc: "Ductable indoor unit, 3 TR, with plenum and grilles", unit: "NOS", qty: "6" },
+        { no: "4", desc: "Refrigerant copper piping with nitrile rubber insulation, all sizes", unit: "RMT", qty: "860" },
+        { no: "5", desc: "Condensate drain piping, uPVC 25 mm, with insulation", unit: "RMT", qty: "420" },
+        { no: "6", desc: "Wired remote controller", unit: "NOS", qty: "30" }
+      ]
+    }
+  ],
+  "BOQ-FF-02": [
+    {
+      bill: "Bill No.1 - Sprinkler & Hydrant System",
+      notes: ["Supply, installation, testing and commissioning of the sprinkler and hydrant systems complete with supports, as per specifications and NBC requirements."],
+      items: [
+        { no: "1", desc: "Pendant sprinkler, 68°C, K-80, quick response", unit: "NOS", qty: "1240" },
+        { no: "2", desc: "MS ERW heavy class pipe, 25 mm to 150 mm, with fittings", unit: "RMT", qty: "3200" },
+        { no: "3", desc: "Landing valve, SS internals, with instantaneous outlet", unit: "NOS", qty: "48" },
+        { no: "4", desc: "First-aid hose reel drum with 30 m hose", unit: "NOS", qty: "48" },
+        { no: "5", desc: "Fire brigade inlet, 4-way", unit: "NOS", qty: "2" }
+      ]
+    }
+  ],
+  "BOQ-EL-04": [
+    {
+      bill: "Bill No.1 - LT Panels",
+      notes: ["Supply, installation, testing and commissioning of type-tested LT panels as per single line diagram and approved make list."],
+      items: [
+        { no: "1", desc: "Main LT panel, 2500 A, Form 4b, with ACBs and metering", unit: "NOS", qty: "1" },
+        { no: "2", desc: "Sub-distribution boards, floor-wise", unit: "NOS", qty: "12" }
+      ]
+    },
+    {
+      bill: "Bill No.2 - Cabling",
+      notes: ["Laying, testing and termination of LT cables on cable trays, including glands and lugs."],
+      items: [
+        { no: "1", desc: "LT XLPE armoured cable, 3.5C x 300 sqmm, AL", unit: "RMT", qty: "640" },
+        { no: "2", desc: "LT XLPE armoured cable, 4C x 16 sqmm, CU", unit: "RMT", qty: "2100" },
+        { no: "3", desc: "Perforated cable tray, 300 mm, with supports", unit: "RMT", qty: "900" }
+      ]
+    }
+  ]
+};
+
+const boqItemCount = (sheet) => sheet.reduce((sum, bill) => sum + bill.items.length, 0);
+
+// The list shows the real item count of each BOQ
+libraryTabs.boqs.docs.forEach((doc) => {
+  const sheet = boqSheets[doc.no];
+  if (sheet) doc.meta = `Excel · ${boqItemCount(sheet)} line items · ${sheet.length} bill${sheet.length === 1 ? "" : "s"}`;
+});
+
+// Spreadsheet rows: bill title, preamble notes, then items (row numbers like the source sheet)
+function boqRows(sheet) {
+  const rows = [];
+  sheet.forEach((bill) => {
+    rows.push({ kind: "bill", desc: bill.bill.toUpperCase() });
+    bill.notes.forEach((note) => rows.push({ kind: "note", desc: note }));
+    bill.items.forEach((item) => rows.push({ kind: "item", ...item }));
   });
+  return rows;
+}
+
+function boqSheetHtml(doc) {
+  const sheet = boqSheets[doc.no] || [];
+  const rows = boqRows(sheet);
+  return `
+    <div class="doc-viewer boq-viewer">
+      <div class="doc-viewer-bar">
+        <span>${boqItemCount(sheet)} line items · ${sheet.length} bill${sheet.length === 1 ? "" : "s"}</span>
+        <label class="policy-search boq-search">
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="search" data-boq-search aria-label="Search this BOQ" placeholder="Search items...">
+        </label>
+      </div>
+      <div class="boq-sheet-scroll">
+        <table class="boq-sheet">
+          <thead><tr><th class="boq-rownum"><span class="visually-hidden">Row</span></th><th class="boq-no">Item</th><th>Item Description</th><th class="boq-unit">Unit</th><th class="boq-qty">Quantity</th></tr></thead>
+          <tbody>
+            ${rows.map((row, index) => `
+              <tr class="boq-${row.kind}" data-boq-row="${row.kind}">
+                <td class="boq-rownum">${index + 2}</td>
+                <td class="boq-no">${escapeHtml(row.no || "")}</td>
+                <td>${escapeHtml(row.desc).replace(/\n/g, "<br>")}</td>
+                <td class="boq-unit">${escapeHtml(row.unit || "")}</td>
+                <td class="boq-qty">${escapeHtml(row.qty || "")}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+        <p class="policy-empty" data-boq-empty hidden>No items match your search.</p>
+      </div>
+    </div>`;
+}
+
+async function downloadBoq(doc, rows) {
+  const table = [["Item", "Item Description", "Unit", "Quantity"], ...rows.map((row) => [row.no || "", row.desc, row.unit || "", row.qty || ""])];
+  const fileName = `${doc.no} ${doc.name}`.replace(/[\\/:*?"<>|]+/g, "-");
+  try {
+    const XLSX = await loadSheetJs();
+    const sheet = XLSX.utils.aoa_to_sheet(table);
+    sheet["!cols"] = [{ wch: 8 }, { wch: 90 }, { wch: 10 }, { wch: 12 }];
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "BOQ");
+    XLSX.writeFile(book, `${fileName}.xlsx`);
+    showToast(`Downloaded ${doc.no} as Excel.`);
+  } catch {
+    // Offline: CSV still opens in Excel
+    downloadText(`${fileName}.csv`, toCsv(table));
+    showToast(`Downloaded ${doc.no} as CSV (Excel reader unavailable offline).`);
+  }
 }
 
 /* APPROVED MAKES (Library tab): equipment types grouped by discipline */
@@ -5007,10 +5482,14 @@ function recordSections(data, { threadTitle = "Comments", threadEmpty = "No comm
     </section>`;
 }
 
+const recordFooter = document.getElementById("record-drawer-footer");
+const defaultRecordFooter = recordFooter.innerHTML;
+
 function openRecordDrawer(ctx) {
   recordCtx = ctx;
   document.getElementById("record-drawer-heading").textContent = ctx.heading;
   recordBody.innerHTML = ctx.render();
+  recordFooter.innerHTML = ctx.footer ? ctx.footer() : defaultRecordFooter;
   enhanceDateInputs(recordBody);
   recordBody.scrollTop = 0;
   recordBackdrop.hidden = false;
@@ -5021,6 +5500,7 @@ function openRecordDrawer(ctx) {
 function rerenderRecordDrawer() {
   const scroll = recordBody.scrollTop;
   recordBody.innerHTML = recordCtx.render();
+  recordFooter.innerHTML = recordCtx.footer ? recordCtx.footer() : defaultRecordFooter;
   enhanceDateInputs(recordBody);
   recordBody.scrollTop = scroll;
 }
@@ -5200,42 +5680,176 @@ function openDeliverableDrawer(row) {
   });
 }
 
-/* Transmittal details */
+/* Transmittal details: review drawings, confirm recipient, then approve & send */
+const recordValues = () => Object.fromEntries(Array.from(recordBody.querySelectorAll("[data-record-field]"), (field) => [field.dataset.recordField, field.value]));
+
+function applyTransmittalFields(t) {
+  const values = recordValues();
+  if ("recipient" in values) t.recipient = values.recipient.trim();
+  if ("recipientRole" in values) t.recipientRole = values.recipientRole.trim();
+  if (values.source) t.source = values.source;
+  if (values.purpose) t.purpose = values.purpose;
+  if ("color" in values) t.copies.color = Math.max(0, Number(values.color) || 0);
+  if ("bw" in values) t.copies.bw = Math.max(0, Number(values.bw) || 0);
+}
+
 function openTransmittalDrawer(row) {
-  const data = transmittals[Number(row.dataset.transmittalIndex)];
-  data.attachments ||= data.docs.map((doc) => `${doc.replace(/[^\w]+/g, "_")}.pdf`);
-  data.thread ||= [];
-  data.activity ||= [`Sent to ${data.to} by ${data.by}`];
-  const statusLabels = Object.fromEntries(Object.entries(transmittalStatuses).map(([key, value]) => [value.label, key]));
+  const t = transmittals[Number(row.dataset.transmittalIndex)];
+  t.activity ||= [t.origin === "ifc" ? "Drafted automatically from an IFC upload" : `Created by ${t.by}`];
+  if (t.status === "sent" && !t.activity.some((entry) => entry.startsWith("Sent"))) t.activity.push(`Sent to ${t.recipient} on ${transmittalDate(t.sent)}`);
+  let error = "";
 
   openRecordDrawer({
-    data,
+    data: t,
     heading: "Transmittal Details",
     render() {
+      const pending = t.status === "pending";
+      const defaults = transmittalDefaults(t.wing);
+      const suggestions = recentRecipients().filter((name) => name !== t.recipient);
+      const numberInput = (name, value, label) => `<span class="drawer-control"><input type="number" min="0" data-record-field="${name}" value="${value}" aria-label="${label}"></span>`;
       return `
-        <p class="drawer-meta">${escapeHtml(data.no)} · Sent ${formatLongDate(data.sent)} by ${escapeHtml(data.by)}</p>
-        <h3 class="drawer-title">${data.docs.length} document${data.docs.length === 1 ? "" : "s"} to ${escapeHtml(data.to)}</h3>
-        <p class="drawer-description">${escapeHtml(data.note || "No cover note.")}</p>
+        <p class="drawer-meta">${t.no} · ${escapeHtml(t.wing)} · ${t.origin === "ifc" ? `Drafted from IFC upload on ${transmittalDate(t.created)}` : `Created by ${escapeHtml(t.by)}`}</p>
+        <h3 class="drawer-title">${escapeHtml(transmittalSubject(t))} <span class="tr-chip ${pending ? "is-pending" : "is-sent"}">${pending ? "Pending" : "Sent"}</span></h3>
+        ${pending
+          ? `<p class="drawer-description">Check the drawings and recipient, then approve to send. ${t.recipient && defaults.basis ? `Recipient filled from history — ${escapeHtml(defaults.basis.no)} went to ${escapeHtml(defaults.basis.recipient)} on ${transmittalDate(defaults.basis.sent)}.` : ""}</p>`
+          : `<p class="drawer-description">Sent to ${escapeHtml(t.recipient)} on ${transmittalDate(t.sent)}.</p>`}
+        ${error ? `<p class="action-error" role="alert">${escapeHtml(error)}</p>` : ""}
         <div class="drawer-detail-grid">
-          ${recordDetail("Status", recordSelect("status", Object.keys(statusLabels), transmittalStatuses[data.status].label))}
-          ${recordDetail("Purpose", recordSelect("purpose", ["For approval", "For information", "For construction", "For tender"], data.purpose))}
-          ${recordDetail("Recipient", recordReadonly(data.to))}
-          ${recordDetail("Documents", recordReadonly(String(data.docs.length)))}
+          ${recordDetail("Recipient", pending
+            ? `<span class="drawer-control"><input type="text" data-record-field="recipient" value="${escapeHtml(t.recipient)}" placeholder="Who receives the drawings" aria-label="Recipient"></span>`
+            : recordReadonly(t.recipient))}
+          ${recordDetail("Source", pending ? recordSelect("source", transmittalSources, t.source) : recordReadonly(t.source))}
+          ${recordDetail("Colour copies", pending ? numberInput("color", t.copies.color, "Colour copies") : recordReadonly(String(t.copies.color)))}
+          ${recordDetail("B&W copies", pending ? numberInput("bw", t.copies.bw, "Black and white copies") : recordReadonly(String(t.copies.bw)))}
+          ${recordDetail("Purpose", pending ? recordSelect("purpose", transmittalPurposes, t.purpose) : recordReadonly(t.purpose))}
+          ${recordDetail("Recipient role", pending
+            ? `<span class="drawer-control"><input type="text" data-record-field="recipientRole" value="${escapeHtml(t.recipientRole || "")}" placeholder="e.g. Site Manager" aria-label="Recipient role"></span>`
+            : recordReadonly(t.recipientRole || "—"))}
         </div>
+        ${pending && suggestions.length ? `
+          <div class="recipient-suggestions">
+            <span>Recently sent to:</span>
+            ${suggestions.map((name) => `<button class="task-priority-filter" type="button" data-record-action="use-recipient" data-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}
+          </div>` : ""}
         <section class="drawer-section">
-          <h4>Documents</h4>
-          <div class="drawer-item-list">${recordChips(data.docs, "No documents.")}</div>
+          <h4>Drawings (${t.drawings.length})</h4>
+          <div class="tr-drawings">
+            <table>
+              <thead><tr><th>Drawing No.</th><th>Drawing Name</th><th>Rev.</th>${pending ? '<th><span class="visually-hidden">Remove</span></th>' : ""}</tr></thead>
+              <tbody>
+                ${t.drawings.map((drawing, index) => `
+                  <tr>
+                    <td>${escapeHtml(drawing.no)}</td>
+                    <td>${escapeHtml(drawing.name)}</td>
+                    <td><span class="upload-type">${escapeHtml(drawing.rev)}</span></td>
+                    ${pending ? `<td><button class="pdf-remove" type="button" data-record-action="remove-drawing" data-index="${index}" aria-label="Remove ${escapeHtml(drawing.name)}">×</button></td>` : ""}
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+          ${pending ? '<button class="drawer-add-action" type="button" data-record-action="add-drawings">+ Add drawings from files</button>' : ""}
         </section>
-        ${recordSections(data, { threadTitle: "Correspondence", threadEmpty: "No replies yet.", placeholder: "Add a note or reply..." })}`;
+        ${t.remarks ? `<section class="drawer-section"><h4>Remarks</h4><p class="drawer-comment">${escapeHtml(t.remarks)}</p></section>` : ""}
+        <section class="drawer-section">
+          <h4>Activity</h4>
+          <div class="drawer-activity-list">${t.activity.map((entry) => `<p class="drawer-activity-item">${escapeHtml(entry)}</p>`).join("")}</div>
+        </section>`;
     },
-    save(values) {
-      const status = statusLabels[values.status];
-      if (status !== data.status) data.activity.push(`Marked ${values.status.toLowerCase()} by ${profileState.name}`);
-      if (values.purpose !== data.purpose) data.activity.push(`Purpose changed to ${values.purpose.toLowerCase()}`);
-      data.status = status;
-      data.purpose = values.purpose;
+    footer() {
+      const pending = t.status === "pending";
+      return `
+        ${pending ? '<button class="submit-project-btn drawer-save" type="button" data-record-action="approve">Approve &amp; Send</button>' : '<button class="submit-project-btn drawer-save" type="button" data-record-action="download">Download PDF</button>'}
+        <div class="drawer-footer-links">
+          ${pending ? '<button class="task-discard" type="button" data-record-save>Save draft</button>' : ""}
+          <button class="task-discard" type="button" data-record-action="view-pdf">View PDF</button>
+          <button class="task-discard" type="button" data-record-action="edit-pdf">Edit PDF</button>
+          ${pending ? '<button class="task-discard" type="button" data-record-action="download">Download PDF</button>' : ""}
+          <button class="task-discard" type="button" data-close-record-drawer>Close</button>
+        </div>`;
+    },
+    actions: {
+      "use-recipient"(button) {
+        applyTransmittalFields(t);
+        t.recipient = button.dataset.name;
+        t.recipientRole = transmittalsSentNewestFirst().find((item) => item.recipient === t.recipient)?.recipientRole || t.recipientRole;
+        rerenderRecordDrawer();
+      },
+      "remove-drawing"(button) {
+        applyTransmittalFields(t);
+        const [removed] = t.drawings.splice(Number(button.dataset.index), 1);
+        t.activity.push(`Removed ${removed.no} ${removed.name}`);
+        rerenderRecordDrawer();
+        renderTransmittals();
+      },
+      "add-drawings"() {
+        applyTransmittalFields(t);
+        openAddDrawingsDialog(t);
+      },
+      "view-pdf"() {
+        if (t.status === "pending") applyTransmittalFields(t);
+        closeRecordDrawer();
+        showDocument("transmittal", t.no);
+      },
+      "edit-pdf"() {
+        if (t.status === "pending") applyTransmittalFields(t);
+        openTransmittalPdfEditor(t);
+      },
+      download() {
+        if (t.status === "pending") applyTransmittalFields(t);
+        downloadTransmittalPdf(t);
+      },
+      approve() {
+        applyTransmittalFields(t);
+        error = !t.recipient ? "Add a recipient before sending."
+          : !t.drawings.length ? "Add at least one drawing before sending."
+            : "";
+        if (error) {
+          rerenderRecordDrawer();
+          recordBody.querySelector('[data-record-field="recipient"]')?.focus();
+          return;
+        }
+        t.status = "sent";
+        t.sent = toDateInput(new Date());
+        t.approvedBy = profileState.name;
+        t.activity.push(`Approved and sent to ${t.recipient} by ${profileState.name}`);
+        renderTransmittals();
+        closeRecordDrawer();
+        showToast(`${t.no} sent to ${t.recipient} — ${t.drawings.length} drawing${t.drawings.length === 1 ? "" : "s"}, ${t.copies.color + t.copies.bw} copies.`);
+      }
+    },
+    save() {
+      applyTransmittalFields(t);
+      t.activity.push(`Draft saved by ${profileState.name}`);
       renderTransmittals();
-      return `${data.no} updated.`;
+      return `${t.no} draft saved.`;
+    }
+  });
+}
+
+function openAddDrawingsDialog(t) {
+  const included = new Set(t.drawings.map((drawing) => drawing.name.toLowerCase()));
+  const options = projectFiles
+    .filter((file) => /\.(dwg|dxf|pdf|rvt)$/i.test(file.name))
+    .map((file) => ({ file, drawing: drawingFromFile(file.name, t.wing, t.drawings.length) }))
+    .filter(({ drawing }) => !included.has(drawing.name.toLowerCase()));
+  openActionDialog({
+    title: `Add drawings to ${t.no}`,
+    subtitle: "Drawing number, name and revision are read from each file.",
+    fields: options.length
+      ? [{ name: "files", label: "Project files", type: "checklist", options: options.map(({ file }) => file.name) }]
+      : [],
+    body: options.length ? "" : '<p class="action-dialog-text">Every drawing in Files is already on this transmittal.</p>',
+    submitLabel: options.length ? "Add Drawings" : null,
+    cancelLabel: options.length ? "Cancel" : "Close",
+    onSubmit(values) {
+      if (!values.files.length) {
+        setActionError("Pick at least one file.");
+        return false;
+      }
+      values.files.forEach((name) => t.drawings.push(drawingFromFile(name, t.wing, t.drawings.length)));
+      t.activity.push(`Added ${values.files.length} drawing${values.files.length === 1 ? "" : "s"} from Files`);
+      renderTransmittals();
+      rerenderRecordDrawer();
     }
   });
 }
@@ -5267,6 +5881,12 @@ recordBackdrop.addEventListener("click", (e) => {
 
   if (e.target.closest("[data-record-attach]")) {
     recordAttachmentInput.click();
+    return;
+  }
+
+  const action = e.target.closest("[data-record-action]");
+  if (action && recordCtx?.actions?.[action.dataset.recordAction]) {
+    recordCtx.actions[action.dataset.recordAction](action);
     return;
   }
 
@@ -5305,6 +5925,190 @@ recordAttachmentInput.addEventListener("change", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !recordBackdrop.hidden && actionBackdrop.hidden) closeRecordDrawer();
 });
+
+/* DOCUMENT PAGE: BOQs, library documents, project files and transmittal PDFs open on their own page */
+const docView = document.getElementById("doc-view");
+const docBody = document.getElementById("doc-view-body");
+pageSections.doc = docView;
+let docReturnRoute = "";
+let docObjectUrl = null;
+let currentDocument = null;
+
+const downloadIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>';
+const docButton = (action, label, primary = false) => `<button class="${primary ? "project-task-add" : "task-advanced-filter-button"}" type="button" data-doc-action="${action}">${primary ? downloadIcon : ""}${label}</button>`;
+
+const docRenderers = {
+  library(key) {
+    const [tabKey, index] = key.split("-");
+    const tab = libraryTabs[tabKey];
+    const doc = tab?.docs[Number(index)];
+    if (!doc) return null;
+    const crumbs = [{ label: "Library", view: "library" }, { label: tab.label, route: tabKey === "policies" ? "library" : `library/${tabKey}` }, { label: doc.name }];
+    const meta = `${doc.no} · ${doc.version} · Updated ${formatLongDate(doc.updated)}`;
+
+    if (tabKey === "boqs") {
+      return {
+        section: "library", crumbs, kicker: "BOQ", title: doc.name, meta,
+        actions: docButton("download-boq", "Download Excel", true),
+        body: boqSheetHtml(doc),
+        context: { doc }
+      };
+    }
+
+    const policy = tabKey === "policies";
+    const pages = Number((doc.meta.match(/(\d+)\s*Pages/i) || [])[1]) || 1;
+    return {
+      section: "library", crumbs, kicker: policy ? "Policy · view only" : tab.label, title: doc.name, meta,
+      // Policies can only be read here; everything else in the library can be downloaded
+      actions: policy ? `<span class="doc-viewer-lock">${lockIcon} View only — policies can't be downloaded or printed</span>` : docButton("download-library", "Download", true),
+      body: `
+        <div class="doc-viewer doc-viewer-page">
+          <div class="doc-viewer-bar"><span>Page 1 of ${pages}</span><span>${escapeHtml(doc.meta)}</span></div>
+          ${libraryPageHtml(doc, tabKey)}
+        </div>`,
+      context: { doc }
+    };
+  },
+
+  file(key) {
+    const file = projectFiles[Number(key)];
+    if (!file) return null;
+    const project = currentProjectName();
+    const kind = fileKind(file.name);
+    let preview;
+    if (file.file && (file.file.type === "application/pdf" || kind.kind === "pdf")) {
+      docObjectUrl = URL.createObjectURL(file.file);
+      preview = `<iframe class="doc-frame" src="${docObjectUrl}" title="${escapeHtml(file.name)}"></iframe>`;
+    } else if (file.file && file.file.type.startsWith("image/")) {
+      docObjectUrl = URL.createObjectURL(file.file);
+      preview = `<div class="doc-image"><img src="${docObjectUrl}" alt="${escapeHtml(file.name)}"></div>`;
+    } else {
+      preview = `
+        <div class="doc-unavailable">
+          <span class="upload-file-icon ${kind.icon}">${kind.label}</span>
+          <strong>${file.file ? `${kind.label} files can't be previewed in the browser` : "Preview isn't stored for this sample file"}</strong>
+          <p>${kind.kind === "drawing" ? "Download it to open in AutoCAD or a DWG viewer." : "Download it to open on your computer."}</p>
+        </div>`;
+    }
+    return {
+      section: "projects",
+      crumbs: [{ label: "Projects", view: "projects" }, { label: project, route: "project/overview" }, { label: "Files", route: "project/files" }, { label: file.name }],
+      kicker: `${kind.label} · ${file.stage}`, title: file.name,
+      meta: `${file.location} · ${file.size} · Uploaded by ${file.by} · ${file.when}`,
+      actions: docButton("download-file", "Download", true),
+      body: preview,
+      context: { file }
+    };
+  },
+
+  transmittal(key) {
+    const t = transmittals.find((item) => item.no === key);
+    if (!t) return null;
+    const project = currentProjectName();
+    return {
+      section: "projects",
+      crumbs: [{ label: "Projects", view: "projects" }, { label: project, route: "project/overview" }, { label: "Transmittals", route: "project/transmittals" }, { label: `${t.no} PDF` }],
+      kicker: `Transmittal · ${t.status === "sent" ? `Sent ${transmittalDate(t.sent)}` : "Pending approval"}`,
+      title: `${t.no} — ${t.wing}`,
+      meta: `${t.drawings.length} drawing${t.drawings.length === 1 ? "" : "s"} · To ${t.recipient || "recipient not set"} · Source ${t.source}`,
+      actions: `${t.status === "pending" ? docButton("review", "Review & Send") : ""}${docButton("edit-pdf", "Edit PDF")}${docButton("download-pdf", "Download PDF", true)}`,
+      body: '<div class="doc-frame doc-frame-loading">Preparing PDF…</div>',
+      context: { t },
+      async after() {
+        try {
+          const pdf = await buildTransmittalPdf(t);
+          if (currentDocument?.key !== `transmittal/${key}`) return;
+          docObjectUrl = pdf.output("bloburl");
+          docBody.innerHTML = `<iframe class="doc-frame" src="${docObjectUrl}" title="${t.no} PDF"></iframe>`;
+        } catch (error) {
+          docBody.innerHTML = `<div class="doc-unavailable"><strong>Couldn't show the PDF</strong><p>${escapeHtml(error.message)}</p></div>`;
+        }
+      }
+    };
+  }
+};
+
+function showDocument(kind, key) {
+  const from = currentHash();
+  if (!from.startsWith("doc/")) docReturnRoute = from;
+  if (docObjectUrl) {
+    URL.revokeObjectURL(docObjectUrl);
+    docObjectUrl = null;
+  }
+
+  const view = docRenderers[kind]?.(String(key));
+  if (!view) {
+    showToast("That document isn't available any more.");
+    renderRoute(docReturnRoute || "library");
+    return;
+  }
+
+  currentDocument = { kind, key: `${kind}/${key}`, ...view.context };
+  sidebarSection.doc = view.section;
+  showPage("doc");
+  document.getElementById("doc-view-kicker").textContent = view.kicker;
+  document.getElementById("doc-view-title").textContent = view.title;
+  document.getElementById("doc-view-meta").textContent = view.meta;
+  document.getElementById("doc-view-actions").innerHTML = view.actions;
+  docBody.innerHTML = view.body;
+  renderBreadcrumb(view.crumbs);
+  syncHash(`doc/${kind}/${key}`);
+  view.after?.();
+}
+
+docView.addEventListener("click", (e) => {
+  if (e.target.closest("[data-doc-back]")) {
+    renderRoute(docReturnRoute || (currentDocument?.kind === "library" ? "library" : "project/overview"));
+    return;
+  }
+
+  const button = e.target.closest("[data-doc-action]");
+  if (!button || !currentDocument) return;
+  const { doc, file, t } = currentDocument;
+  const action = button.dataset.docAction;
+  if (action === "download-boq") downloadBoq(doc, boqRows(boqSheets[doc.no] || []));
+  else if (action === "download-library") showToast(`Downloading ${doc.no} — ${doc.name}…`);
+  else if (action === "download-file") downloadProjectFile(file);
+  else if (action === "download-pdf") downloadTransmittalPdf(t);
+  else if (action === "edit-pdf") openTransmittalPdfEditor(t);
+  else if (action === "review") {
+    openProject(overviewPage.querySelector(".project-title").textContent, "transmittals");
+    const row = document.querySelector(`#transmittal-list tr[data-transmittal-index="${transmittals.indexOf(t)}"]`);
+    if (row) openTransmittalDrawer(row);
+  }
+});
+
+// Search inside a BOQ: keep a bill's heading while any of its items match
+docView.addEventListener("input", (e) => {
+  const search = e.target.closest("[data-boq-search]");
+  if (!search) return;
+  const query = search.value.trim().toLocaleLowerCase();
+  let bill = null;
+  let billHasMatch = false;
+  let matches = 0;
+  const closeBill = () => { if (bill) bill.hidden = Boolean(query) && !billHasMatch; };
+  Array.from(docView.querySelector(".boq-sheet tbody").rows).forEach((row) => {
+    if (row.dataset.boqRow === "bill") {
+      closeBill();
+      bill = row;
+      billHasMatch = false;
+      return;
+    }
+    const ok = !query || (row.dataset.boqRow === "item" && row.textContent.toLocaleLowerCase().includes(query));
+    row.hidden = !ok;
+    if (ok && row.dataset.boqRow === "item") {
+      billHasMatch = true;
+      matches += 1;
+    }
+  });
+  closeBill();
+  docView.querySelector("[data-boq-empty]").hidden = !query || matches > 0;
+});
+
+// After a PDF edit, the open preview shows the new version
+function refreshTransmittalPreview(t) {
+  if (!docView.hidden && currentDocument?.key === `transmittal/${t.no}`) showDocument("transmittal", t.no);
+}
 
 /* RIGHT RAIL DATE */
 function renderRailDate() {
