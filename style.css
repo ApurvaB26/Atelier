@@ -64,8 +64,6 @@
 
 }
 
-/* The layout needs about 1920 CSS px of width, so smaller screens zoom the whole page down.
-   Zoom only grows once the viewport can hold the layout; --app-zoom also drives .app height. */
 :root {
   --app-zoom: 0.75;
 }
@@ -4852,32 +4850,47 @@ body.project-dialog-open {
   color: var(--light-black);
 }
 
+/* Rail list: one compact card plus one-line rows, so a full day stays short */
+.schedule-list {
+  gap: 4px;
+  padding-left: 0;
+}
+
+/* Meeting card: shared by the rail ("compact") and the Meetings page ("full").
+   No vertical dividers and nothing hidden behind hover, so it works on touch too. */
 .meeting-card {
   display: grid;
-  gap: 4px;
-  padding: 12px 16px 16px 20px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 12px 14px;
   border: 1px solid var(--stroke);
   border-left: 4px solid var(--secondary-actions);
   border-radius: 12px;
   background: var(--white);
-  grid-template-columns: minmax(0, 1fr);
-  padding: 12px 16px 16px 20px;
 }
 
-.meeting-status-row {
+.meeting-card-top {
   display: flex;
+  min-height: 28px;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
+}
+
+.meeting-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .meeting-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--medium-black);
+  gap: 5px;
+  color: var(--light-black);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .meeting-status i {
@@ -4894,79 +4907,50 @@ body.project-dialog-open {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  color: var(--medium-black);
+  color: var(--light-black);
   font-size: 12px;
   font-weight: 600;
 }
 
-.meeting-body {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.meeting-time {
-  display: grid;
-  min-width: 48px;
-  padding-right: 8px;
-  border-right: 1px solid var(--stroke);
-  text-align: center;
-  align-content: center;
-}
-
-.meeting-time strong {
-  font-size: 17px;
-  color: var(--black);
-}
-
-.meeting-time span {
-  font-size: 13px;
-  color: var(--light-black);
-}
-
 .meeting-title {
+  display: block;
+  color: var(--black);
   font-size: 15px;
+  font-weight: 700;
   line-height: 1.3;
-  color: var(--black);
+  overflow-wrap: anywhere;
 }
 
-.meeting-info {
-  display: grid;
-  flex: 1;
+.meeting-meta {
+  display: flex;
   min-width: 0;
+  align-items: center;
   gap: 6px;
-  align-content: center;
-}
-
-.meeting-title {
-  font-size: 16px;
-  color: var(--black);
-}
-
-.meeting-place {
+  color: var(--light-black);
   font-size: 13px;
-  font-weight: 500;
+}
+
+.meeting-meta svg {
+  flex: 0 0 14px;
   color: var(--dark-brown);
+}
+
+.meeting-meta > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.meeting-place {
+  color: var(--dark-brown);
+  font-weight: 500;
+}
+
 .meeting-tools {
-  display: none;
-  gap: 6px;
-}
-
-.meeting-card:hover .meeting-place,
-.meeting-card:focus-within .meeting-place {
-  display: none;
-}
-
-.meeting-card:hover .meeting-tools,
-.meeting-card:focus-within .meeting-tools {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
 }
 
 .meeting-tool {
@@ -4983,27 +4967,97 @@ body.project-dialog-open {
   cursor: pointer;
 }
 
-.meeting-side {
-  display: flex;
+/* Join is the only filled button; Rejoin and Directions are outlined */
+.meeting-action {
+  display: inline-flex;
+  min-height: 28px;
   align-items: center;
-  align-self: stretch;
-  padding-left: 8px;
-  border-left: 1px solid var(--stroke);
-  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--secondary-actions);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--dark-brown);
+  font: 600 12px var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.meeting-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
+.meeting-action:hover {
+  background: var(--main-bg);
+}
+
+.meeting-action.is-primary {
   background: var(--secondary-actions);
   color: var(--white);
-  font: 600 13px var(--font-body);
-  cursor: pointer;
+}
+
+.meeting-action.is-primary:hover {
+  border-color: var(--dark-brown);
+  background: var(--dark-brown);
+}
+
+.meeting-collapse {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dark-brown);
+}
+
+.meeting-collapse:hover {
+  background: var(--main-bg);
+}
+
+/* Rail rows for the other meetings of the day */
+.meeting-row {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--black);
+  font: 500 13px var(--font-body);
+  text-align: left;
+}
+
+.meeting-row:hover {
+  background: var(--main-bg);
+}
+
+.meeting-row-time {
+  flex: 0 0 auto;
+  color: var(--light-black);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-row .meeting-status {
+  flex: 0 0 auto;
+}
+
+.meeting-row-chevron {
+  flex: 0 0 auto;
+  color: var(--secondary-actions);
+  font-size: 18px;
+  line-height: 1;
 }
 
 /*RIGHT RAIL OVERLAYS*/
@@ -5145,17 +5199,6 @@ body.project-dialog-open {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-}
-
-/* keep the location visible, hide Notes / MOM Tracker on hover */
-.rail-overlay .meeting-card:hover .meeting-place,
-.rail-overlay .meeting-card:focus-within .meeting-place {
-  display: block;
-}
-
-.rail-overlay .meeting-card:hover .meeting-tools,
-.rail-overlay .meeting-card:focus-within .meeting-tools {
-  display: none;
 }
 
 .rail-overlay .overlay-top strong {
@@ -8694,4 +8737,94 @@ kbd {
 /* Folders without an avatar preview (Files) still push the count to the right */
 .team-folder-copy + .team-folder-count {
   margin-left: auto;
+}
+
+/*TOPBAR: stays on one tidy line as space shrinks (narrow windows or browser zoom).
+  Below 1100px the stacked layout above takes over. */
+.create-project-btn > .create-project-label {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+@media (min-width: 1101px) {
+  .topbar {
+    container-type: inline-size;
+    container-name: topbar;
+    min-width: 0;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    gap: 16px;
+  }
+
+  .search {
+    flex: 1 1 260px;
+    width: auto;
+    min-width: 180px;
+    max-width: 640px;
+  }
+
+  .search input {
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-right {
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 12px;
+  }
+
+  .sync {
+    white-space: nowrap;
+  }
+
+  .user-info {
+    width: auto;
+    max-width: 174px;
+  }
+
+  .user-info .user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Each step frees room for the search box before anything can collide */
+  @container topbar (max-width: 980px) {
+    .sync {
+      display: none;
+    }
+  }
+
+  @container topbar (max-width: 880px) {
+    .search-key {
+      display: none;
+    }
+
+    .create-project-btn {
+      width: 40px;
+      padding: 0;
+    }
+
+    .create-project-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .icon-set {
+      gap: 10px;
+    }
+  }
+
+  @container topbar (max-width: 760px) {
+    .user-info .user-name {
+      display: none;
+    }
+  }
 }

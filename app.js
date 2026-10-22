@@ -1110,76 +1110,116 @@ const onDay = (dayOffset, hours, minutes) => {
 };
 
 const meetings = [
-  { id: "m1", start: inMinutes(12),  end: inMinutes(102), title: "Elanor Coordination Meeting", type: "online",    place: "Teams link",            project: "Lodha Belmondo", attendees: 5, status: "join" },
-  { id: "m2", start: inMinutes(150), end: inMinutes(210), title: "MEP Design Review",           type: "in-person", place: "Belle, 36th Floor, OLP", project: "Lodha One",      attendees: 8, status: "join" },
-  { id: "m3", start: inMinutes(300), end: inMinutes(360), title: "Fire Strategy Call",          type: "online",    place: "Teams link",            project: "Palava",         attendees: 12, status: "going" },
-  { id: "m4", start: onDay(1, 10, 0),  end: onDay(1, 11, 0),  title: "HVAC Shop Drawing Review",     type: "in-person", place: "Site office, Tower 26", project: "Lodha Belmondo", attendees: 6, status: "join" },
-  { id: "m5", start: onDay(1, 15, 30), end: onDay(1, 16, 15), title: "Consultant Weekly Sync",       type: "online",    place: "Teams link",            project: "Lodha Amara",    attendees: 9, status: "join" },
-  { id: "m6", start: onDay(3, 11, 0),  end: onDay(3, 12, 30), title: "Plumbing Riser Coordination", type: "in-person", place: "Belle, 36th Floor, OLP", project: "Lodha One",      attendees: 7, status: "join" }
+  { id: "m1", start: inMinutes(12),  end: inMinutes(102), title: "Elanor Coordination Meeting", type: "online",    place: "Teams link",            project: "Lodha Belmondo", attendees: 5, status: "join", joined: false },
+  { id: "m2", start: inMinutes(150), end: inMinutes(210), title: "MEP Design Review",           type: "in-person", place: "Belle, 36th Floor, OLP", project: "Lodha One",      attendees: 8, status: "join", joined: false },
+  { id: "m3", start: inMinutes(300), end: inMinutes(360), title: "Fire Strategy Call",          type: "online",    place: "Teams link",            project: "Palava",         attendees: 12, status: "going", joined: false },
+  { id: "m4", start: onDay(1, 10, 0),  end: onDay(1, 11, 0),  title: "HVAC Shop Drawing Review",     type: "in-person", place: "Site office, Tower 26", project: "Lodha Belmondo", attendees: 6, status: "join", joined: false },
+  { id: "m5", start: onDay(1, 15, 30), end: onDay(1, 16, 15), title: "Consultant Weekly Sync",       type: "online",    place: "Teams link",            project: "Lodha Amara",    attendees: 9, status: "join", joined: false },
+  { id: "m6", start: onDay(3, 11, 0),  end: onDay(3, 12, 30), title: "Plumbing Riser Coordination", type: "in-person", place: "Belle, 36th Floor, OLP", project: "Lodha One",      attendees: 7, status: "join", joined: false }
 ];
 let meetingSeq = meetings.length;
 
 const formatTime = (d) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-function getChip(m) {
-  if (m.joined) return { text: m.type === "online" ? "Joined" : "Attending", cls: "live" };
-  if (m.end < Date.now()) return { text: "Ended", cls: "" };
-  const mins = Math.round((m.start - Date.now()) / 60000);
-  if (mins <= 0) return { text: "Live now", cls: "live" };
-  if (mins < 60) return { text: `In ${mins} min`, cls: "soon" };
-  if (mins < 24 * 60) return { text: `In ${Math.floor(mins / 60)} h`, cls: "" };
-  return { text: `In ${Math.round(mins / (24 * 60))} d`, cls: "" };
+// One status system for every meeting card and row: the chip says when, the action says what you can do
+function getMeetingState(m, now = Date.now()) {
+  const start = m.start.getTime();
+  const end = m.end.getTime();
+  const minutes = Math.ceil((start - now) / 60000);
+  const live = now >= start && now < end;
+  const ended = now >= end;
+  const today = m.start.toDateString() === new Date(now).toDateString();
+
+  let chip = null;
+  if (live) chip = { text: "Live now", cls: "live" };
+  else if (!ended && minutes < 60) chip = { text: `In ${Math.max(1, minutes)} min`, cls: "soon" };
+  else if (!ended && today) chip = { text: `In ${Math.floor(minutes / 60)} h`, cls: "" };
+
+  let action = null;
+  if (!ended) {
+    if (m.type === "online") {
+      if (live && m.joined) action = { kind: "join", label: "Rejoin", primary: false };
+      else if (live || minutes <= 15) action = { kind: "join", label: "Join", primary: true };
+    } else if (start - now <= 24 * 60 * 60 * 1000) {
+      action = { kind: "directions", label: "Directions", primary: false };
+    }
+  }
+  return { chip, action };
 }
 
-function createMeetingCard(m) {
-  
-  const chip = getChip(m);
-  const attendees = m.attendees
-    ? `<span class="meeting-attendees">
-         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 10 9" fill="none">
-  <path d="M7.08366 8V7.16667C7.08366 6.72464 6.90806 6.30072 6.5955 5.98816C6.28294 5.67559 5.85902 5.5 5.41699 5.5H2.08366C1.64163 5.5 1.21771 5.67559 0.905148 5.98816C0.592587 6.30072 0.416992 6.72464 0.416992 7.16667V8M9.58366 8V7.16667C9.58338 6.79739 9.46047 6.43865 9.23423 6.1468C9.00798 5.85494 8.69121 5.64649 8.33366 5.55417M6.66699 0.554167C7.0255 0.645959 7.34326 0.854459 7.57017 1.1468C7.79709 1.43913 7.92026 1.79868 7.92026 2.16875C7.92026 2.53882 7.79709 2.89837 7.57017 3.1907C7.34326 3.48304 7.0255 3.69154 6.66699 3.78333M5.41699 2.16667C5.41699 3.08714 4.6708 3.83333 3.75033 3.83333C2.82985 3.83333 2.08366 3.08714 2.08366 2.16667C2.08366 1.24619 2.82985 0.5 3.75033 0.5C4.6708 0.5 5.41699 1.24619 5.41699 2.16667Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="0.7"/>
-</svg>
-         ${m.attendees}
-       </span>`
+const meetingIcons = {
+  video: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>',
+  pin: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.33 6.67c0 3.33-3.69 6.8-4.93 7.87a.67.67 0 0 1-.8 0C6.36 13.47 2.67 10 2.67 6.67a5.33 5.33 0 0 1 10.66 0Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="6.67" r="2" stroke="currentColor" stroke-width="1.6"/></svg>',
+  people: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  collapse: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+// formatDateInput, not toDateInput: the rail overlay renders a card before the shared helpers load
+const meetingDate = (m) => formatDateInput(m.start);
+
+const meetingChipHtml = (chip) => (chip ? `<span class="meeting-status ${chip.cls}"><i></i>${escapeHtml(chip.text)}</span>` : "");
+
+function meetingActionHtml(m, action) {
+  if (!action) return "";
+  if (action.kind === "directions") {
+    const href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.place)}`;
+    return `<a class="meeting-action" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" aria-label="Directions to ${escapeHtml(m.place)}">${meetingIcons.pin}Directions</a>`;
+  }
+  return `<button class="meeting-action${action.primary ? " is-primary" : ""}" type="button" data-action="join" aria-label="${action.label} ${escapeHtml(m.title)}">${meetingIcons.video}${action.label}</button>`;
+}
+
+// "full" is the Meetings page card (with attendees, Notes and MOM Tracker); "compact" is the rail card
+function createMeetingCard(m, variant = "full", options = {}) {
+  const { chip, action } = getMeetingState(m);
+  const full = variant === "full";
+  const attendees = full && m.attendees
+    ? `<span class="meeting-attendees" aria-label="${Number(m.attendees)} invited">${meetingIcons.people}${Number(m.attendees)}</span>`
+    : "";
+  const collapse = options.collapsible
+    ? `<button class="meeting-collapse" type="button" data-meeting-collapse aria-label="Collapse ${escapeHtml(m.title)}">${meetingIcons.collapse}</button>`
+    : "";
+  const tools = full
+    ? `<div class="meeting-tools">
+        <button class="meeting-tool" type="button" data-action="notes">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          Notes
+        </button>
+        <button class="meeting-tool" type="button" data-action="mom">MOM Tracker</button>
+      </div>`
     : "";
 
   return `
-    <article class="meeting-card" tabindex="0" data-meeting-id="${m.id}" data-date="${new Date(m.start - m.start.getTimezoneOffset() * 60000).toISOString().slice(0, 10)}">
-      <div class="meeting-status-row">
-        <span class="meeting-status ${chip.cls}"><i></i>${chip.text}</span>
+    <article class="meeting-card${full ? "" : " is-compact"}" tabindex="0" data-meeting-id="${escapeHtml(m.id)}" data-date="${meetingDate(m)}">
+      <div class="meeting-card-top">
+        ${meetingChipHtml(chip)}
         ${attendees}
+        <span class="meeting-card-actions">${meetingActionHtml(m, action)}${collapse}</span>
       </div>
+      <strong class="meeting-title">${escapeHtml(m.title)}</strong>
+      <p class="meeting-meta">
+        ${m.type === "online" ? meetingIcons.video : meetingIcons.pin}
+        <span>${formatTime(m.start)} – ${formatTime(m.end)} · <span class="meeting-place">${escapeHtml(m.place)}</span></span>
+      </p>
+      ${tools}
+    </article>`;
+}
 
-      <div class="meeting-body">
-        <div class="meeting-time">
-          <strong>${formatTime(m.start)}</strong>
-          <span>${formatTime(m.end)}</span>
-        </div>
-
-        <div class="meeting-info">
-          <strong class="meeting-title">${escapeHtml(m.title)}</strong>
-          <span class="meeting-place">${escapeHtml(m.place)}</span>
-          <div class="meeting-tools">
-            <button class="meeting-tool" type="button" data-action="notes">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              Notes
-            </button>
-            <button class="meeting-tool" type="button" data-action="mom">MOM Tracker</button>
-          </div>
-        </div>
-
-        <div class="meeting-side">
-          <button class="meeting-btn" type="button" data-action="join">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-            Join
-          </button>
-        </div>
-      </div>
-    </article>
-  `;
+// One-line row for the rail's other meetings; clicking it expands into the compact card
+function createMeetingRow(m) {
+  const { chip } = getMeetingState(m);
+  return `
+    <button class="meeting-row" type="button" data-meeting-row="${escapeHtml(m.id)}" aria-expanded="false" aria-label="${escapeHtml(m.title)} at ${formatTime(m.start)}${chip ? `, ${escapeHtml(chip.text)}` : ""}. Show details">
+      <span class="meeting-row-time">${formatTime(m.start)}</span>
+      <span class="meeting-row-title">${escapeHtml(m.title)}</span>
+      ${chip ? `<span class="meeting-status ${chip.cls}">${escapeHtml(chip.text)}</span>` : ""}
+      <span class="meeting-row-chevron" aria-hidden="true">›</span>
+    </button>`;
 }
 
 const isToday = (date) => date.toDateString() === new Date().toDateString();
+
+// The one rail row the user has expanded into a compact card
+let expandedRailMeeting = null;
 
 function renderSchedule() {
   const showingToday = isToday(railSelectedDay);
@@ -1188,9 +1228,16 @@ function renderSchedule() {
     .filter((m) => sameDay(m.start, railSelectedDay) && (!showingToday || m.end > Date.now()))
     .sort((a, b) => a.start - b.start);
 
+  // The first meeting still live or upcoming gets the full compact card
+  const nextIndex = dayMeetings.findIndex((m) => m.end > Date.now());
+
   document.getElementById("schedule-title").textContent = `Your Schedule - ${showingToday ? "Today" : dayLabelText}`;
   document.getElementById("schedule-list").innerHTML = dayMeetings.length
-    ? dayMeetings.map(createMeetingCard).join("")
+    ? dayMeetings.map((m, index) => {
+      if (index === nextIndex) return createMeetingCard(m, "compact");
+      if (m.id === expandedRailMeeting) return createMeetingCard(m, "compact", { collapsible: true });
+      return createMeetingRow(m);
+    }).join("")
     : `<p class="schedule-empty">${showingToday ? "No upcoming meetings" : `No meetings on ${dayLabelText}`}</p>`;
   renderRailWeek();
 
@@ -1201,6 +1248,22 @@ function renderSchedule() {
 }
 
 setInterval(renderSchedule, 60000);
+
+document.getElementById("schedule-list").addEventListener("click", (e) => {
+  const row = e.target.closest("[data-meeting-row]");
+  const collapse = e.target.closest("[data-meeting-collapse]");
+  if (!row && !collapse) return;
+  const id = row ? row.dataset.meetingRow : null;
+  const previous = expandedRailMeeting;
+  expandedRailMeeting = id;
+  renderSchedule();
+  // Keep keyboard focus on what was just opened or closed
+  const list = document.getElementById("schedule-list");
+  const focusTarget = id
+    ? list.querySelector(`.meeting-card[data-meeting-id="${CSS.escape(id)}"]`)
+    : list.querySelector(`[data-meeting-row="${CSS.escape(previous)}"]`);
+  focusTarget?.focus();
+});
 
 const notesDialogBackdrop = document.getElementById("notes-dialog-backdrop");
 const notesSubjectInput = document.getElementById("notes-subject");
@@ -1294,7 +1357,7 @@ const railOverlays = {
 
     return `
       <div class="overlay-top"><strong>Next meeting</strong><a href="#meetings" class="rail-view-all" data-route="meetings">View All ↗</a></div>
-      ${next ? createMeetingCard(next) : '<p class="schedule-empty">No upcoming meetings</p>'}
+      ${next ? createMeetingCard(next, "compact") : '<p class="schedule-empty">No upcoming meetings</p>'}
     `;
   },
 
@@ -3823,6 +3886,7 @@ function openScheduleMeetingDialog() {
         place: values.place || (online ? "Teams link" : "To be confirmed"),
         project: onProject ? overviewPage.querySelector(".project-title").textContent : "General",
         attendees: invited + 1,
+        joined: false,
         invitees: values.people,
         guests,
         status: "join"
@@ -5039,7 +5103,7 @@ function renderMeetingsPage() {
     ? Array.from(days.values(), (list) => `
       <section class="meeting-day">
         <h2 class="meeting-day-title">${dayLabel(list[0].start)} <span>${list[0].start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></h2>
-        <div class="meeting-grid">${list.map(createMeetingCard).join("")}</div>
+        <div class="meeting-grid">${list.map((m) => createMeetingCard(m)).join("")}</div>
       </section>`).join("")
     : '<p class="schedule-empty">No meetings match these filters.</p>';
 }
@@ -5135,11 +5199,10 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  const rejoining = meeting.joined;
   meeting.joined = true;
   renderSchedule();
-  showToast(meeting.type === "online"
-    ? `Joining "${meeting.title}" on Teams…`
-    : `Marked as attending "${meeting.title}" at ${meeting.place}.`);
+  showToast(`${rejoining ? "Rejoining" : "Joining"} "${meeting.title}" on Teams…`);
 });
 
 /* MINUTES OF MEETING DIALOG */
