@@ -277,12 +277,12 @@ Logout
           <input id="project-code" name="projectCode" placeholder="e.g. LB-K">
         </div>
         <div class="form-field">
-          <label>Project type / category <span>*</span></label>
+          <label>Project segment <span>*</span></label>
           <input id="project-category" name="category" type="hidden">
           <details class="custom-select category-select" data-select="category">
 
-            <summary><span class="select-value">Select project category</span><span class="select-chevron" aria-hidden="true"></span></summary>
-            <div class="select-menu category-options" role="listbox" aria-label="Project category">
+            <summary><span class="select-value">Select project segment</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu category-options" role="listbox" aria-label="Project segment">
               <button type="button" class="category-option" data-value="Commercial" aria-selected="false">
 
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -304,61 +304,29 @@ Logout
         </div>
 
         <div class="form-field">
-          <label>Location <span>*</span></label>
-          <input id="project-location" name="location" type="hidden">
-          <details class="custom-select region-select" data-select="region">
-            <summary><span class="select-value">Select region</span><span class="select-chevron" aria-hidden="true"></span></summary>
-            <div class="select-menu region-options" role="listbox" aria-label="Project region">
-              <p class="option-group-title">Mumbai region</p>
-              <button type="button" data-value="South Mumbai"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>South Mumbai</span><small>MH</small></button>
-
-              <button type="button" data-value="Thane"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Thane</span><small>MH</small></button>
-
-              <button type="button" data-value="Upper Thane"><span class="region-pin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-</span><span>Upper Thane</span><small>MH</small></button>
-
-              <button type="button" data-value="Palava"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Palava</span><small>MH</small></button>
-
-              <button type="button" data-value="Western"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Western</span><small>MH</small></button>
-
-              <button type="button" data-value="Eastern"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Eastern</span><small>MH</small></button>
-
-              <p class="option-group-title">Other hubs</p>
-              <button type="button" data-value="Pune"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Pune</span><small>MH</small></button>
-
-              <button type="button" data-value="Bangalore"><span class="region-pin">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M13.3326 6.66683C13.3326 9.99581 9.64029 13.4628 8.40042 14.5336C8.28491 14.6204 8.14431 14.6674 7.99979 14.6674C7.85527 14.6674 7.71467 14.6204 7.59917 14.5336C6.35929 13.4628 2.66699 9.99581 2.66699 6.66683C2.66699 5.25222 3.22884 3.89554 4.22893 2.89525C5.22903 1.89496 6.58545 1.33301 7.99979 1.33301C9.41414 1.33301 10.7706 1.89496 11.7707 2.89525C12.7707 3.89554 13.3326 5.25222 13.3326 6.66683ZM9.99959 6.66683C9.99959 7.77151 9.10425 8.66702 7.99979 8.66702C6.89533 8.66702 5.99999 7.77151 5.99999 6.66683C5.99999 5.56216 6.89533 4.66665 7.99979 4.66665C9.10425 4.66665 9.99959 5.56216 9.99959 6.66683Z" stroke-width="1.5" stroke-linecap="round" stroke="#644235"/>
-</svg>
-              </span><span>Bangalore</span><small>KN</small></button>
+          <label>Project category <span>*</span></label>
+          <input id="project-tier" name="tier" type="hidden">
+          <details class="custom-select category-select tier-select" data-select="tier">
+            <summary><span class="select-value">Select project category</span><span class="select-chevron" aria-hidden="true"></span></summary>
+            <div class="select-menu category-options" role="listbox" aria-label="Project category">
+              <button type="button" class="category-option" data-value="Gold 1"><span class="option-icon tier-gold" aria-hidden="true">◆</span><span><strong>Gold 1</strong></span></button>
+              <button type="button" class="category-option" data-value="Gold 2"><span class="option-icon tier-gold" aria-hidden="true">◆</span><span><strong>Gold 2</strong></span></button>
+              <button type="button" class="category-option" data-value="Platinum"><span class="option-icon tier-platinum" aria-hidden="true">◆</span><span><strong>Platinum</strong></span></button>
+              <button type="button" class="category-option" data-value="Diamond"><span class="option-icon tier-diamond" aria-hidden="true">◇</span><span><strong>Diamond</strong></span></button>
             </div>
           </details>
+        </div>
+
+        <div class="form-field location-field">
+          <label for="project-location">Location <span>*</span></label>
+          <div class="location-search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.33 6.67c0 3.33-3.69 6.8-4.93 7.87a.67.67 0 0 1-.8 0C6.36 13.47 2.67 10 2.67 6.67a5.33 5.33 0 0 1 10.66 0Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="6.67" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
+            <input id="project-location" name="location" type="text" required autocomplete="off" placeholder="Search a place or address" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="location-suggestions">
+          </div>
+          <input id="project-location-lat" name="locationLat" type="hidden">
+          <input id="project-location-lng" name="locationLng" type="hidden">
+          <div class="select-menu location-suggestions" id="location-suggestions" role="listbox" aria-label="Location suggestions" hidden></div>
+          <p class="location-hint" id="location-hint"></p>
         </div>
         <div class="form-field form-field-wide">
           <div class="field-label-row">
@@ -548,10 +516,6 @@ Logout
             <span class="attachment-filename" aria-live="polite"></span>
           </label>
           <input class="visually-hidden" id="project-attachment" name="attachment" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
-        </div>
-        <div class="form-field">
-          <label for="project-budget">Estimated budget</label>
-          <div class="budget-input"><span aria-hidden="true">$</span><input id="project-budget" name="budget" type="number" min="0" step="0.01" placeholder="Enter estimated budget"></div>
         </div>
       </div>
       <footer class="project-dialog-footer">
@@ -1027,6 +991,123 @@ Logout
       <span class="kpi-tag negative">1 blocking</span>
     </div>
   </div>
+</section>
+
+<section class="panel" id="dashboard-deliverables-panel">
+  <div class="panel-header">
+    <h2>Project Deliverables - Today & Overdue</h2>
+    <div class="panel-actions">
+      <button class="add-btn" type="button" aria-label="Add deliverable" data-project-action="add-deliverable">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7.99967 3.33301V12.6663M3.33301 7.99967H12.6663" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="panel-count" aria-live="polite">0/3</span>
+    </div>
+  </div>
+
+  <div class="deliverables-scroll">
+    <table class="data-table aligned-table" id="deliverables-table">
+  <colgroup>
+    <col class="col-check"><col class="col-main"><col class="col-project"><col class="col-status"><col class="col-due"><col class="col-action">
+  </colgroup>
+      <thead>
+        <tr>
+          <th scope="col" aria-label="Complete"></th>
+          <th scope="col">Document Name</th>
+          <th scope="col">Project Name</th>
+          <th scope="col">Status</th>
+          <th scope="col">Due Date</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Fire Tender Pacakage"><span class="checkbox-box"></span></label></td>
+          <td>
+            <strong>Issue Fire Tender Pacakage</strong><span class="badge high">High</span>
+            <span class="row-subtitle"><span class="waiting-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Waiting on MEP Consultant</span></span>
+          </td>
+          <td>Lodha One • Tower B</td>
+          <td><span class="task-state delayed">Delayed</span></td>
+          <td><span class="status overdue">Overdue</span></td>
+          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
+        </tr>
+        <tr>
+          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Coordinated Typical Floor GFC"><span class="checkbox-box"></span></label></td>
+          <td><strong>Issue Coordinated Typical Floor GFC</strong><span class="badge medium">Medium</span></td>
+          <td>Lodha Amara • Wing 25</td>
+          <td><span class="task-state in-progress">In Progress</span></td>
+          <td><span class="status due-today">Due Today</span></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Revised Infra Fire Layout"><span class="checkbox-box"></span></label></td>
+          <td>
+            <strong>Issue Revised Infra Fire Layout</strong><span class="badge medium">Medium</span>
+            <span class="row-subtitle"><span class="waiting-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Waiting on Architect</span></span>
+          </td>
+          <td>Palava • Phase 2</td>
+          <td><span class="task-state pending">Pending</span></td>
+          <td><span class="status due-tomorrow">Due Tomorrow</span></td>
+          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <a href="#open-items/deliverables" class="view-all" data-route="open-items/deliverables">View All Deliverables ↗</a>
+</section>
+
+<!--RFIs Table-->
+<section class="panel" id="dashboard-rfi-panel">
+  <div class="panel-header">
+    <h2>Pending RFIs - Critical</h2>
+    <span class="panel-count" id="dashboard-rfi-count">6 Pending</span>
+  </div>
+
+  <table class="data-table" id="rfiTable">
+  <thead>
+    <tr>
+      <th>RFI ID</th>
+      <th>Query</th>
+      <th>Project Name</th>
+      <th>Impact</th>
+      <th>Discipline</th>
+      <th>Raised By</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RFI-209</td>
+      <td><strong>MCB Rating Clarification</strong><span class="badge blocking">Blocking</span><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
+      <td>Wing 25</td>
+      <td>None</td>
+      <td>Electrical</td>
+      <td>Sachin Patil</td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+    </tr>
+    <tr>
+      <td>RFI-209</td>
+      <td><strong>Issue Revised Infra Fire Layout</strong><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
+      <td>Wing 25</td>
+      <td>None</td>
+      <td>Electrical</td>
+      <td>Sachin Patil</td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+    </tr>
+    <tr>
+      <td>RFI-209</td>
+      <td><strong>MCB Rating Clarification</strong><span class="badge blocking">Blocking</span><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
+      <td>Wing 25</td>
+      <td>None</td>
+      <td>Electrical</td>
+      <td>Sachin Patil</td>
+      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
+    </tr>
+  </tbody>
+</table>
+
+  <a href="#open-items/rfis" class="view-all" data-route="open-items/rfis">View All RFIs ↗</a>
 </section>
 
 <section class="panel">
@@ -1869,13 +1950,7 @@ Logout
 <!-- Project Files -->
 <section class="project-tasks-view" id="project-files-view" hidden aria-label="Project files">
   <div class="project-task-toolbar">
-    <div class="task-priority-filters" role="group" aria-label="Filter files by type">
-      <button class="task-priority-filter is-active" type="button" data-file-type="all" aria-pressed="true">All</button>
-      <button class="task-priority-filter" type="button" data-file-type="pdf" aria-pressed="false">PDF</button>
-      <button class="task-priority-filter" type="button" data-file-type="sheet" aria-pressed="false">Spreadsheets</button>
-      <button class="task-priority-filter" type="button" data-file-type="drawing" aria-pressed="false">Drawings</button>
-      <button class="task-priority-filter" type="button" data-file-type="other" aria-pressed="false">Other</button>
-    </div>
+    <div class="task-priority-filters" role="group" aria-label="Filter files by stage" id="file-stage-filters"></div>
     <label class="project-task-search">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.8"/><path d="m13.2 13.2 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <input id="project-file-search" type="search" aria-label="Search files" placeholder="Search files...">
@@ -1885,7 +1960,17 @@ Logout
       Upload File
     </button>
   </div>
-  <div class="upload-grid files-grid" id="project-files-grid"></div>
+  <section class="team-section" aria-labelledby="files-mep-title">
+    <header class="team-section-head">
+      <h2 id="files-mep-title">MEP Design files <span class="task-group-count" id="files-mep-count"></span></h2>
+      <span class="pref-hint">Your department</span>
+    </header>
+    <div class="upload-grid files-grid" id="project-files-grid"></div>
+  </section>
+  <section class="team-section" aria-labelledby="files-other-title">
+    <header class="team-section-head"><h2 id="files-other-title">Other departments</h2></header>
+    <div class="team-folders" id="file-folders"></div>
+  </section>
   <p class="policy-empty" id="project-files-empty" hidden>No files match these filters.</p>
 </section>
 
@@ -2250,122 +2335,7 @@ Logout
   <div class="doc-view-body" id="doc-view-body"></div>
 </section>
 
-<!--RFIs Table-->
-<section class="panel" id="dashboard-rfi-panel">
-  <div class="panel-header">
-    <h2>Pending RFIs - Critical</h2>
-    <span class="panel-count" id="dashboard-rfi-count">6 Pending</span>
-  </div>
 
-  <table class="data-table" id="rfiTable">
-  <thead>
-    <tr>
-      <th>RFI ID</th>
-      <th>Query</th>
-      <th>Project Name</th>
-      <th>Impact</th>
-      <th>Discipline</th>
-      <th>Raised By</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>RFI-209</td>
-      <td><strong>MCB Rating Clarification</strong><span class="badge blocking">Blocking</span><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
-      <td>Wing 25</td>
-      <td>None</td>
-      <td>Electrical</td>
-      <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
-    </tr>
-    <tr>
-      <td>RFI-209</td>
-      <td><strong>Issue Revised Infra Fire Layout</strong><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
-      <td>Wing 25</td>
-      <td>None</td>
-      <td>Electrical</td>
-      <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
-    </tr>
-    <tr>
-      <td>RFI-209</td>
-      <td><strong>MCB Rating Clarification</strong><span class="badge blocking">Blocking</span><span class="row-subtitle">Received 2h ago · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span></td>
-      <td>Wing 25</td>
-      <td>None</td>
-      <td>Electrical</td>
-      <td>Sachin Patil</td>
-      <td><button class="remind-btn" type="button" data-row-action="respond"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Respond</button></td>
-    </tr>
-  </tbody>
-</table>
-
-  <a href="#open-items/rfis" class="view-all" data-route="open-items/rfis">View All RFIs ↗</a>
-</section>
-
-<section class="panel" id="dashboard-deliverables-panel">
-  <div class="panel-header">
-    <h2>Project Deliverables - Today & Overdue</h2>
-    <div class="panel-actions">
-      <button class="add-btn" type="button" aria-label="Add deliverable" data-project-action="add-deliverable">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7.99967 3.33301V12.6663M3.33301 7.99967H12.6663" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <span class="panel-count" aria-live="polite">0/3</span>
-    </div>
-  </div>
-
-  <div class="deliverables-scroll">
-    <table class="data-table aligned-table" id="deliverables-table">
-  <colgroup>
-    <col class="col-check"><col class="col-main"><col class="col-project"><col class="col-status"><col class="col-due"><col class="col-action">
-  </colgroup>
-      <thead>
-        <tr>
-          <th scope="col" aria-label="Complete"></th>
-          <th scope="col">Document Name</th>
-          <th scope="col">Project Name</th>
-          <th scope="col">Status</th>
-          <th scope="col">Due Date</th>
-          <th scope="col">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Fire Tender Pacakage"><span class="checkbox-box"></span></label></td>
-          <td>
-            <strong>Issue Fire Tender Pacakage</strong><span class="badge high">High</span>
-            <span class="row-subtitle"><span class="waiting-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Waiting on MEP Consultant</span></span>
-          </td>
-          <td>Lodha One • Tower B</td>
-          <td><span class="task-state delayed">Delayed</span></td>
-          <td><span class="status overdue">Overdue</span></td>
-          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
-        </tr>
-        <tr>
-          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Coordinated Typical Floor GFC"><span class="checkbox-box"></span></label></td>
-          <td><strong>Issue Coordinated Typical Floor GFC</strong><span class="badge medium">Medium</span></td>
-          <td>Lodha Amara • Wing 25</td>
-          <td><span class="task-state in-progress">In Progress</span></td>
-          <td><span class="status due-today">Due Today</span></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td><label class="custom-checkbox"><input class="task-checkbox" type="checkbox" aria-label="Complete Issue Revised Infra Fire Layout"><span class="checkbox-box"></span></label></td>
-          <td>
-            <strong>Issue Revised Infra Fire Layout</strong><span class="badge medium">Medium</span>
-            <span class="row-subtitle"><span class="waiting-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Waiting on Architect</span></span>
-          </td>
-          <td>Palava • Phase 2</td>
-          <td><span class="task-state pending">Pending</span></td>
-          <td><span class="status due-tomorrow">Due Tomorrow</span></td>
-          <td><button class="remind-btn" type="button" data-row-action="remind"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Remind</button></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <a href="#open-items/deliverables" class="view-all" data-route="open-items/deliverables">View All Deliverables ↗</a>
-</section>
 </div>
 
     </main>
@@ -2403,6 +2373,18 @@ Logout
     </button>
   </header>
 
+<!--WEEK STRIP: pick a day to see its meetings-->
+<section class="rail-week-strip" aria-label="Pick a day">
+  <div class="rail-week-bar">
+    <strong id="rail-week-month"></strong>
+    <div class="overlay-arrows">
+      <button type="button" data-rail-week="-1" aria-label="Previous week"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" data-rail-week="1" aria-label="Next week"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+  <div class="rail-week-days" id="rail-week-days"></div>
+</section>
+
 <section class="rail-calendar" id="rail-calendar" hidden>
   <div class="calendar-monthbar">
     <strong class="calendar-month-label"></strong>
@@ -2433,7 +2415,7 @@ Logout
 <!--MEETINGS SECTION-->
 <section class="schedule">
   <div class="rail-section-title">
-    <h3>Your Schedule - Today</h3>
+    <h3 id="schedule-title">Your Schedule - Today</h3>
     <a href="#meetings" class="rail-view-all" data-route="meetings">View All ↗</a>
   </div>
   <div class="schedule-list" id="schedule-list"></div>

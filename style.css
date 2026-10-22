@@ -1178,18 +1178,18 @@ tr.done td {
 }
 
 /* Dashboard table: ID, Task, Project, Assigned By are struck through */
-.dashboard-view tr.done td:nth-child(2),
-.dashboard-view tr.done td:nth-child(3),
-.dashboard-view tr.done td:nth-child(4),
-.dashboard-view tr.done td:nth-child(7) {
+#tasks-table tr.done td:nth-child(2),
+#tasks-table tr.done td:nth-child(3),
+#tasks-table tr.done td:nth-child(4),
+#tasks-table tr.done td:nth-child(7) {
   text-decoration: line-through;
 }
 
-.dashboard-view tr.done .status {
+#tasks-table tr.done .status {
   display: none;
 }
 
-.dashboard-view tr.done td:nth-child(6)::after {
+#tasks-table tr.done td:nth-child(6)::after {
   content: "—";
 }
 
@@ -8507,3 +8507,191 @@ kbd {
 .pdf-table th:nth-child(4) { width: 64px; }
 .pdf-table th:nth-child(5) { width: 84px; }
 .pdf-table th:nth-child(6) { width: 36px; }
+
+/* Create Project is hidden for roles that can't start projects */
+.create-project-btn[hidden] {
+  display: none;
+}
+
+/*CREATE PROJECT: category tiers + location search*/
+.tier-gold { color: #b8860b; }
+.tier-platinum { color: #7d8790; }
+.tier-diamond { color: #2f7fb3; }
+
+.location-field {
+  position: relative;
+}
+
+.location-search {
+  display: flex;
+  min-height: 37px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--grey);
+}
+
+.location-search:focus-within {
+  border-color: var(--secondary-actions);
+  box-shadow: 0 0 0 3px rgba(171, 133, 118, 0.14);
+}
+
+.project-dialog .form-field .location-search input {
+  flex: 1;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.location-suggestions {
+  top: 100%;
+  margin-top: 4px;
+  max-height: 260px;
+  border-radius: 9px;
+}
+
+.location-suggestions[hidden] {
+  display: none;
+}
+
+.location-option.is-active {
+  background: var(--main-bg);
+}
+
+.location-hint {
+  color: var(--grey);
+  font-size: 11px;
+}
+
+.location-hint:empty {
+  display: none;
+}
+
+/*RIGHT RAIL WEEK STRIP*/
+.rail-week-strip {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.rail-week-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.rail-week-bar strong {
+  color: var(--medium-black);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rail-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.rail-day {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 2px 0 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--font-body);
+}
+
+.rail-day-name {
+  color: var(--light-black);
+  font-size: 13px;
+}
+
+.rail-day-num {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rail-day:hover .rail-day-num {
+  background: var(--main-bg);
+}
+
+.rail-day.is-today:not(.is-selected) .rail-day-num {
+  border-color: var(--secondary-actions);
+}
+
+.rail-day.is-selected .rail-day-num {
+  background: var(--dark-brown);
+  color: #ffffff;
+}
+
+.rail-day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--secondary-actions);
+}
+
+.rail-day-dot[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+/*PROJECT FILES: stage chips*/
+.chip-count {
+  margin-left: 2px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/*DOCUMENT ZOOM*/
+.doc-zoom {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.doc-zoom button {
+  min-width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--dark-brown);
+  font: 600 16px var(--font-body);
+}
+
+.doc-zoom .doc-zoom-value {
+  min-width: 58px;
+  border-right: 1px solid var(--stroke);
+  border-left: 1px solid var(--stroke);
+  font-size: 12px;
+}
+
+.doc-zoom button:hover:not(:disabled) {
+  background: var(--main-bg);
+}
+
+.doc-zoom button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Folders without an avatar preview (Files) still push the count to the right */
+.team-folder-copy + .team-folder-count {
+  margin-left: auto;
+}

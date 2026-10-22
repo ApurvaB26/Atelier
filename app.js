@@ -1,6 +1,6 @@
 const searchInput = document.querySelector('.search input');
 const dashboardTasksBody = document.querySelector('#tasks-table tbody');
-const taskCount = document.querySelector('.panel-count');
+const taskCount = document.querySelector('#tasks-table').closest('.panel').querySelector('.panel-count');
 
 function updateTaskCount() {
   const taskCheckboxes = Array.from(dashboardTasksBody.querySelectorAll('.task-checkbox'));
@@ -236,7 +236,7 @@ function setAttachment(file) {
 }
 
 function getDropdownValueInput(dropdown) {
-  const inputId = dropdown.dataset.select === 'region' ? 'project-location' : `project-${dropdown.dataset.select}`;
+  const inputId = `project-${dropdown.dataset.select}`;
   return document.getElementById(inputId);
 }
 
@@ -610,8 +610,10 @@ attachmentDropzone.addEventListener('drop', (event) => {
 function createProjectCard(data) {
   const name = data.get('projectName');
   const code = data.get('projectCode');
-  const category = data.get('category');
-  const meta = [code, category].filter(Boolean).join(' • ');
+  const segment = data.get('category');
+  const tier = data.get('tier');
+  const location = String(data.get('location') || '').split(',')[0];
+  const meta = [code, segment, tier, location].filter(Boolean).join(' • ');
 
   const card = document.createElement('article');
   card.className = 'project-card';
@@ -647,7 +649,7 @@ projectForm.addEventListener('submit', (event) => {
 
   const missingDropdown = customSelects.find((dropdown) => {
     const value = getDropdownValueInput(dropdown).value;
-    return (dropdown.dataset.select === 'category' || dropdown.dataset.select === 'region') && !value;
+    return (dropdown.dataset.select === 'category' || dropdown.dataset.select === 'tier') && !value;
   });
 
   if (missingDropdown) {
@@ -666,13 +668,11 @@ projectForm.addEventListener('submit', (event) => {
   customSelects.forEach((dropdown) => {
     dropdown.open = false;
     getDropdownValueInput(dropdown).value = '';
-    dropdown.querySelector('.select-value').textContent = dropdown.dataset.select === 'category'
-      ? 'Select project category'
-      : dropdown.dataset.select === 'region'
-        ? 'Select region'
-        : dropdown.dataset.select === 'manager'
-          ? 'Select project manager'
-          : 'Select Consultant';
+    dropdown.querySelector('.select-value').textContent = {
+      category: 'Select project segment',
+      tier: 'Select project category',
+      manager: 'Select project manager'
+    }[dropdown.dataset.select] || 'Select Consultant';
     dropdown.querySelectorAll('[data-value]').forEach((option) => option.removeAttribute('aria-selected'));
     const search = dropdown.querySelector('.dropdown-search input');
     if (search) {
@@ -1123,6 +1123,7 @@ const formatTime = (d) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minut
 
 function getChip(m) {
   if (m.joined) return { text: m.type === "online" ? "Joined" : "Attending", cls: "live" };
+  if (m.end < Date.now()) return { text: "Ended", cls: "" };
   const mins = Math.round((m.start - Date.now()) / 60000);
   if (mins <= 0) return { text: "Live now", cls: "live" };
   if (mins < 60) return { text: `In ${mins} min`, cls: "soon" };
@@ -1181,13 +1182,17 @@ function createMeetingCard(m) {
 const isToday = (date) => date.toDateString() === new Date().toDateString();
 
 function renderSchedule() {
-  const upcoming = meetings
-    .filter((m) => m.end > Date.now() && isToday(m.start))
+  const showingToday = isToday(railSelectedDay);
+  const dayLabelText = railSelectedDay.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const dayMeetings = meetings
+    .filter((m) => sameDay(m.start, railSelectedDay) && (!showingToday || m.end > Date.now()))
     .sort((a, b) => a.start - b.start);
 
-  document.getElementById("schedule-list").innerHTML = upcoming.length
-    ? upcoming.map(createMeetingCard).join("")
-    : `<p class="schedule-empty">No upcoming meetings</p>`;
+  document.getElementById("schedule-title").textContent = `Your Schedule - ${showingToday ? "Today" : dayLabelText}`;
+  document.getElementById("schedule-list").innerHTML = dayMeetings.length
+    ? dayMeetings.map(createMeetingCard).join("")
+    : `<p class="schedule-empty">${showingToday ? "No upcoming meetings" : `No meetings on ${dayLabelText}`}</p>`;
+  renderRailWeek();
 
   const todayCount = meetings.filter((m) => isToday(m.start)).length;
   document.getElementById("metric-meetings").textContent = todayCount;
@@ -3846,17 +3851,31 @@ document.addEventListener("click", (e) => {
 const overviewUploadInput = document.getElementById("overview-upload-input");
 const projectFilesGrid = document.getElementById("project-files-grid");
 const projectFileSearch = document.getElementById("project-file-search");
-let projectFileType = "all";
+let projectFileStage = "all";
+const fileStages = ["WIP", "DD", "Tender", "GFC", "IFC", "VFC", "As-built"];
+// MEP Design is the user's own department, so its files sit in front; the rest are in folders
+const fileDepartments = [
+  { key: "MEP Design", full: "MEP Design" },
+  { key: "Architectural", full: "Architecture & interiors" },
+  { key: "Structural", full: "Structural design" },
+  { key: "DCO", full: "Design Cost Optimisation" },
+  { key: "Site Team", full: "Construction Management" }
+];
+const openFileFolders = new Set();
 
 const projectFiles = [
-  { name: "Structural_L4_Slab_Reinforcement_v2.pdf", stage: "VFC", location: "Structure · Wing 26 · L4", size: "14.2 MB", by: "Apurva B.", when: "Just Now" },
-  { name: "HVAC_Equipment_Schedule_Datasheet_Chillers.xls", stage: "DD", location: "Structure · Wing 26 · L4", size: "14.2 MB", by: "Apurva B.", when: "2 hrs ago" },
-  { name: "Fire_Strategy_NOC_Approval_Letter.pdf", stage: "DD", location: "Site Team · Wing 12", size: "2.1 MB", by: "Sanjay Rao", when: "1 day ago" },
-  { name: "Plumbing_Single_Line_Diagram_R3.dwg", stage: "Tender", location: "JV Consultant · Wing 25", size: "28.5 MB", by: "Rajesh K.", when: "2 hrs ago" },
-  { name: "Electrical_Lighting_Layout_RevC.pdf", stage: "GFC", location: "Electrical · Tower 26", size: "6.8 MB", by: "Sachin Patil", when: "2 hrs ago" },
-  { name: "Drainage_Calculations_Tower16.xlsx", stage: "DD", location: "Plumbing · Tower 16", size: "1.4 MB", by: "Neha Kapoor", when: "Yesterday" },
-  { name: "Fire_Pump_Room_Layout.dwg", stage: "VFC", location: "Fire · UGT 2", size: "19.3 MB", by: "Rohit Patil", when: "Yesterday" },
-  { name: "UGT2_Site_Photos.zip", stage: "Site", location: "Site Team · UGT 2", size: "48.0 MB", by: "Rohit Patil", when: "3 days ago" }
+  { name: "Structural_L4_Slab_Reinforcement_v2.pdf", stage: "VFC", department: "Structural", location: "Structure · Wing 26 · L4", size: "14.2 MB", by: "Apurva B.", when: "Just Now" },
+  { name: "HVAC_Equipment_Schedule_Datasheet_Chillers.xls", stage: "DD", department: "MEP Design", location: "HVAC · Wing 26 · L4", size: "14.2 MB", by: "Apurva B.", when: "2 hrs ago" },
+  { name: "Fire_Strategy_NOC_Approval_Letter.pdf", stage: "DD", department: "Site Team", location: "Site Team · Wing 12", size: "2.1 MB", by: "Sanjay Rao", when: "1 day ago" },
+  { name: "Plumbing_Single_Line_Diagram_R3.dwg", stage: "Tender", department: "MEP Design", location: "JV Consultant · Wing 25", size: "28.5 MB", by: "Rajesh K.", when: "2 hrs ago" },
+  { name: "Electrical_Lighting_Layout_RevC.pdf", stage: "GFC", department: "MEP Design", location: "Electrical · Tower 26", size: "6.8 MB", by: "Sachin Patil", when: "2 hrs ago" },
+  { name: "Drainage_Calculations_Tower16.xlsx", stage: "DD", department: "MEP Design", location: "Plumbing · Tower 16", size: "1.4 MB", by: "Neha Kapoor", when: "Yesterday" },
+  { name: "Fire_Pump_Room_Layout.dwg", stage: "VFC", department: "MEP Design", location: "Fire · UGT 2", size: "19.3 MB", by: "Rohit Patil", when: "Yesterday" },
+  { name: "UGT2_Site_Photos.zip", stage: "WIP", department: "Site Team", location: "Site Team · UGT 2", size: "48.0 MB", by: "Rohit Patil", when: "3 days ago" },
+  { name: "Typical_Floor_Plan_Tower26_R4.dwg", stage: "GFC", department: "Architectural", location: "Architecture · Tower 26", size: "22.6 MB", by: "Ananya Rao", when: "2 days ago" },
+  { name: "Facade_Elevations_East_R2.pdf", stage: "DD", department: "Architectural", location: "Facade · Tower 26", size: "9.4 MB", by: "Vikram Sethi", when: "4 days ago" },
+  { name: "MEP_Cost_Plan_v3.xlsx", stage: "WIP", department: "DCO", location: "DCO · All Towers", size: "0.8 MB", by: "Kavita Nair", when: "Yesterday" },
+  { name: "HVAC_Value_Engineering_Report.pdf", stage: "DD", department: "DCO", location: "DCO · MLCP", size: "3.2 MB", by: "Arjun Mehta", when: "Last week" }
 ];
 
 function fileKind(name) {
@@ -3890,10 +3909,47 @@ function renderFiles() {
   document.getElementById("overview-upload-grid").innerHTML = projectFiles.slice(0, 4).map(uploadCardHtml).join("");
 
   const query = projectFileSearch.value.trim().toLocaleLowerCase();
-  const visible = projectFiles.filter((file) => (projectFileType === "all" || fileKind(file.name).kind === projectFileType)
-    && `${file.name} ${file.location} ${file.by}`.toLocaleLowerCase().includes(query));
-  projectFilesGrid.innerHTML = visible.map(uploadCardHtml).join("");
-  document.getElementById("project-files-empty").hidden = visible.length !== 0;
+  const matches = (file) => (projectFileStage === "all" || file.stage === projectFileStage)
+    && `${file.name} ${file.location} ${file.by} ${file.department}`.toLocaleLowerCase().includes(query);
+  const filtering = Boolean(query) || projectFileStage !== "all";
+
+  // Stage quick filters, with how many files are at each stage
+  const counts = new Map();
+  projectFiles.forEach((file) => counts.set(file.stage, (counts.get(file.stage) || 0) + 1));
+  const stages = [...fileStages.filter((stage) => counts.has(stage)), ...[...counts.keys()].filter((stage) => !fileStages.includes(stage))];
+  document.getElementById("file-stage-filters").innerHTML = ["all", ...stages].map((stage) => `
+    <button class="task-priority-filter${projectFileStage === stage ? " is-active" : ""}" type="button" data-file-stage="${escapeHtml(stage)}" aria-pressed="${projectFileStage === stage}">
+      ${stage === "all" ? "All" : escapeHtml(stage)} <span class="chip-count">${stage === "all" ? projectFiles.length : counts.get(stage)}</span>
+    </button>`).join("");
+
+  const mep = projectFiles.filter((file) => (file.department || "MEP Design") === "MEP Design" && matches(file));
+  projectFilesGrid.innerHTML = mep.length ? mep.map(uploadCardHtml).join("") : '<p class="pref-hint">No MEP files match these filters.</p>';
+  document.getElementById("files-mep-count").textContent = String(mep.length).padStart(2, "0");
+  let shown = mep.length;
+
+  const folders = fileDepartments.slice(1).map((department) => {
+    const all = projectFiles.filter((file) => file.department === department.key);
+    const visible = all.filter(matches);
+    if (filtering && !visible.length) return "";
+    shown += visible.length;
+    // A search or stage filter opens every folder with a match
+    const open = openFileFolders.has(department.key) || filtering;
+    return `
+      <section class="team-folder${open ? " is-open" : ""}">
+        <button class="team-folder-head" type="button" data-file-folder="${escapeHtml(department.key)}" aria-expanded="${open}">
+          <span class="team-folder-icon">${folderIcon}</span>
+          <span class="team-folder-copy"><strong>${escapeHtml(department.key)}</strong><small>${escapeHtml(department.full)}</small></span>
+          <span class="team-folder-count">${filtering ? `${visible.length} of ${all.length}` : `${all.length} ${all.length === 1 ? "file" : "files"}`}</span>
+          <span class="task-group-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="upload-grid files-grid team-folder-body"${open ? "" : " hidden"}>
+          ${visible.length ? visible.map(uploadCardHtml).join("") : '<p class="pref-hint">No files from this department yet.</p>'}
+        </div>
+      </section>`;
+  }).join("");
+  document.getElementById("file-folders").innerHTML = folders;
+  document.getElementById("file-folders").closest(".team-section").hidden = !folders.trim();
+  document.getElementById("project-files-empty").hidden = shown !== 0;
 }
 
 function downloadProjectFile(file) {
@@ -3941,12 +3997,14 @@ overviewUploadInput.addEventListener("change", () => {
         { name: "wing", label: "Wing / Tower", type: "select", options: transmittalWings },
         { name: "stage", label: "Stage", type: "select", options: ["WIP", "DD", "Tender", "IFC", "VFC", "As-built"], value: "IFC" }
       ] }
+,
+      { name: "department", label: "Department", type: "select", options: fileDepartments.map((department) => department.key), value: "MEP Design" }
     ],
     submitLabel: "Upload",
     onSubmit(values) {
       const uploader = `${firstName(profileState.name)} ${profileState.name.split(/\s+/)[1]?.[0] || ""}.`.replace(/ \.$/, "");
       [...added].reverse().forEach((file) => {
-        projectFiles.unshift({ name: file.name, stage: values.stage, location: values.wing, size: formatFileSize(file.size), by: uploader, when: "Just Now", file });
+        projectFiles.unshift({ name: file.name, stage: values.stage, department: values.department, location: values.wing, size: formatFileSize(file.size), by: uploader, when: "Just Now", file });
       });
       renderFiles();
       prependActivity({ initials: initialsOf(profileState.name), text: `${initialsOf(profileState.name)} uploaded <b>${escapeHtml(added.length === 1 ? added[0].name : `${added.length} files`)}</b> (${values.stage})`, tag: escapeHtml(values.wing) });
@@ -3961,15 +4019,21 @@ overviewUploadInput.addEventListener("change", () => {
   });
 });
 
-document.querySelectorAll("[data-file-type]").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    projectFileType = chip.dataset.fileType;
-    document.querySelectorAll("[data-file-type]").forEach((c) => {
-      c.classList.toggle("is-active", c === chip);
-      c.setAttribute("aria-pressed", String(c === chip));
-    });
-    renderFiles();
-  });
+document.getElementById("file-stage-filters").addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-file-stage]");
+  if (!chip) return;
+  projectFileStage = chip.dataset.fileStage;
+  renderFiles();
+});
+
+document.getElementById("file-folders").addEventListener("click", (e) => {
+  const head = e.target.closest("[data-file-folder]");
+  if (!head) return;
+  const key = head.dataset.fileFolder;
+  if (openFileFolders.has(key)) openFileFolders.delete(key);
+  else openFileFolders.add(key);
+  renderFiles();
+  document.querySelector(`[data-file-folder="${key}"]`)?.focus();
 });
 projectFileSearch.addEventListener("input", renderFiles);
 
@@ -6020,6 +6084,7 @@ const docRenderers = {
           if (currentDocument?.key !== `transmittal/${key}`) return;
           docObjectUrl = pdf.output("bloburl");
           docBody.innerHTML = `<iframe class="doc-frame" src="${docObjectUrl}" title="${t.no} PDF"></iframe>`;
+          applyDocZoom();
         } catch (error) {
           docBody.innerHTML = `<div class="doc-unavailable"><strong>Couldn't show the PDF</strong><p>${escapeHtml(error.message)}</p></div>`;
         }
@@ -6049,8 +6114,10 @@ function showDocument(kind, key) {
   document.getElementById("doc-view-kicker").textContent = view.kicker;
   document.getElementById("doc-view-title").textContent = view.title;
   document.getElementById("doc-view-meta").textContent = view.meta;
-  document.getElementById("doc-view-actions").innerHTML = view.actions;
+  document.getElementById("doc-view-actions").innerHTML = docZoomControls() + view.actions;
   docBody.innerHTML = view.body;
+  docZoom = 100;
+  applyDocZoom();
   renderBreadcrumb(view.crumbs);
   syncHash(`doc/${kind}/${key}`);
   view.after?.();
@@ -6110,9 +6177,273 @@ function refreshTransmittalPreview(t) {
   if (!docView.hidden && currentDocument?.key === `transmittal/${t.no}`) showDocument("transmittal", t.no);
 }
 
+/* CREATE PROJECT: only these roles can start a project */
+const projectCreatorRoles = ["Super Admin", "L1", "L0", "HOD"];
+const createProjectButton = document.querySelector("[data-open-project-dialog]");
+
+function applyRolePermissions() {
+  createProjectButton.hidden = !projectCreatorRoles.includes(currentRole.textContent.trim());
+}
+
+roleSwitchMenu.addEventListener("click", applyRolePermissions);
+
+/* PROJECT LOCATION SEARCH
+   Uses Google Places when a Maps key is set below; otherwise suggestions come from OpenStreetMap. */
+const GOOGLE_MAPS_API_KEY = ""; // Google Cloud key with "Places API (New)" enabled
+const locationInput = document.getElementById("project-location");
+const locationSuggestions = document.getElementById("location-suggestions");
+const locationHint = document.getElementById("location-hint");
+let locationTimer = null;
+let locationRequest = 0;
+let locationResults = [];
+let googlePlacesPromise = null;
+
+function loadGooglePlaces() {
+  googlePlacesPromise ||= new Promise((resolve, reject) => {
+    window.__atelierMapsReady = () => google.maps.importLibrary("places").then(resolve, reject);
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&v=weekly&loading=async&callback=__atelierMapsReady`;
+    script.onerror = () => {
+      googlePlacesPromise = null;
+      reject(new Error("Google Maps didn't load"));
+    };
+    document.head.append(script);
+  });
+  return googlePlacesPromise;
+}
+
+async function searchPlaces(query) {
+  if (GOOGLE_MAPS_API_KEY) {
+    const { AutocompleteSuggestion } = await loadGooglePlaces();
+    const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: query, includedRegionCodes: ["in"] });
+    return suggestions.filter((s) => s.placePrediction).map(({ placePrediction: place }) => ({
+      main: place.mainText?.text || place.text.text,
+      secondary: place.secondaryText?.text || "",
+      value: place.text.text,
+      placeId: place.placeId
+    }));
+  }
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=in&q=${encodeURIComponent(query)}`, {
+    headers: { "Accept-Language": "en" }
+  });
+  if (!response.ok) throw new Error(`Search failed (${response.status})`);
+  return (await response.json()).map((place) => {
+    const parts = place.display_name.split(", ");
+    return { main: parts[0], secondary: parts.slice(1, 4).join(", "), value: place.display_name, lat: place.lat, lng: place.lon };
+  });
+}
+
+function setLocationOpen(open) {
+  locationSuggestions.hidden = !open;
+  locationInput.setAttribute("aria-expanded", String(open));
+}
+
+function renderLocationSuggestions(active = -1) {
+  locationSuggestions.innerHTML = locationResults.map((place, index) => `
+    <button class="person-option location-option${index === active ? " is-active" : ""}" type="button" role="option" data-location-index="${index}" aria-selected="${index === active}">
+      <span class="region-pin" aria-hidden="true">⌖</span>
+      <span><strong>${escapeHtml(place.main)}</strong><small>${escapeHtml(place.secondary)}</small></span>
+    </button>`).join("");
+  setLocationOpen(locationResults.length > 0);
+}
+
+function chooseLocation(place) {
+  locationInput.value = place.value;
+  document.getElementById("project-location-lat").value = place.lat || "";
+  document.getElementById("project-location-lng").value = place.lng || "";
+  locationInput.dataset.placeId = place.placeId || "";
+  setLocationOpen(false);
+}
+
+locationInput.addEventListener("input", () => {
+  clearTimeout(locationTimer);
+  document.getElementById("project-location-lat").value = "";
+  document.getElementById("project-location-lng").value = "";
+  const query = locationInput.value.trim();
+  if (query.length < 3) {
+    setLocationOpen(false);
+    return;
+  }
+  const request = ++locationRequest;
+  // OpenStreetMap asks for no more than one search a second
+  locationTimer = setTimeout(async () => {
+    locationHint.textContent = "Searching…";
+    try {
+      const results = await searchPlaces(query);
+      if (request !== locationRequest) return;
+      locationResults = results;
+      renderLocationSuggestions();
+      locationHint.textContent = results.length
+        ? (GOOGLE_MAPS_API_KEY ? "Suggestions from Google Maps" : "Suggestions from OpenStreetMap · add a Google Maps key to use Google")
+        : "No matches — you can keep what you typed.";
+    } catch {
+      if (request !== locationRequest) return;
+      setLocationOpen(false);
+      locationHint.textContent = "Couldn't load suggestions — you can still type the location.";
+    }
+  }, GOOGLE_MAPS_API_KEY ? 300 : 600);
+});
+
+locationInput.addEventListener("keydown", (e) => {
+  if (locationSuggestions.hidden) return;
+  const options = Array.from(locationSuggestions.querySelectorAll("[data-location-index]"));
+  const active = options.findIndex((option) => option.classList.contains("is-active"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    renderLocationSuggestions(e.key === "ArrowDown" ? Math.min(options.length - 1, active + 1) : Math.max(0, active - 1));
+  } else if (e.key === "Enter" && active >= 0) {
+    e.preventDefault();
+    chooseLocation(locationResults[active]);
+  } else if (e.key === "Escape") {
+    e.stopPropagation(); // close the list, not the dialog
+    setLocationOpen(false);
+  }
+});
+
+locationSuggestions.addEventListener("click", (e) => {
+  const option = e.target.closest("[data-location-index]");
+  if (option) chooseLocation(locationResults[Number(option.dataset.locationIndex)]);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".location-field")) setLocationOpen(false);
+});
+
+projectForm.addEventListener("reset", () => {
+  setLocationOpen(false);
+  locationHint.textContent = "";
+});
+
+/* RIGHT RAIL WEEK STRIP: pick a day to see its meetings */
+const startOfDay = (date) => {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day;
+};
+const weekStartOf = (date) => {
+  const day = startOfDay(date);
+  day.setDate(day.getDate() - day.getDay());
+  return day;
+};
+const sameDay = (a, b) => a.toDateString() === b.toDateString();
+let railSelectedDay = startOfDay(new Date());
+let railWeekStart = weekStartOf(railSelectedDay);
+
+function renderRailWeek() {
+  const days = [...Array(7)].map((_, i) => {
+    const day = new Date(railWeekStart);
+    day.setDate(day.getDate() + i);
+    return day;
+  });
+  document.getElementById("rail-week-month").textContent = days[3].toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  document.getElementById("rail-week-days").innerHTML = days.map((day) => {
+    const selected = sameDay(day, railSelectedDay);
+    const hasMeetings = meetings.some((m) => sameDay(m.start, day));
+    return `
+      <button class="rail-day${selected ? " is-selected" : ""}${isToday(day) ? " is-today" : ""}" type="button" data-rail-day="${toDateInput(day)}" aria-pressed="${selected}"
+        aria-label="${day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${hasMeetings ? ", has meetings" : ""}">
+        <span class="rail-day-name">${day.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2)}</span>
+        <span class="rail-day-num">${pad2(day.getDate())}</span>
+        <i class="rail-day-dot"${hasMeetings ? "" : " hidden"}></i>
+      </button>`;
+  }).join("");
+}
+
+function selectRailDay(date) {
+  railSelectedDay = startOfDay(date);
+  railWeekStart = weekStartOf(railSelectedDay);
+  selectedDate = railSelectedDay.toDateString(); // month calendar highlights the same day
+  renderRailDate();
+  renderSchedule();
+  renderRailCalendar();
+}
+
+document.querySelector(".rail-week-strip").addEventListener("click", (e) => {
+  const shift = e.target.closest("[data-rail-week]");
+  if (shift) {
+    railWeekStart.setDate(railWeekStart.getDate() + 7 * Number(shift.dataset.railWeek));
+    renderRailWeek();
+    return;
+  }
+  const day = e.target.closest("[data-rail-day]");
+  if (day) selectRailDay(parseDateInput(day.dataset.railDay));
+});
+
+// Picking a day in the month calendar does the same
+railCalendar.querySelector(".calendar-days").addEventListener("click", (e) => {
+  const dayButton = e.target.closest(".calendar-day");
+  if (!dayButton) return;
+  selectRailDay(new Date(dayButton.dataset.date));
+  railCalendar.hidden = true;
+});
+
+/* DOCUMENT ZOOM: zoom the document itself, not the whole app */
+let docZoom = 100;
+const docZoomSteps = [50, 67, 75, 90, 100, 110, 125, 150, 175, 200, 250, 300];
+
+function docZoomTarget() {
+  return docBody.querySelector("iframe.doc-frame, .doc-page, .boq-sheet, .doc-image img");
+}
+
+function applyDocZoom() {
+  const target = docZoomTarget();
+  const label = document.getElementById("doc-zoom-value");
+  if (label) label.textContent = `${docZoom}%`;
+  document.querySelectorAll("[data-doc-zoom]").forEach((button) => { button.disabled = !target; });
+  if (!target) return;
+  if (target.tagName === "IFRAME") {
+    // Chrome's PDF viewer takes its zoom from the URL
+    const base = target.src.split("#")[0];
+    if (base) target.src = `${base}#zoom=${docZoom}`;
+  } else {
+    target.style.zoom = docZoom / 100;
+  }
+}
+
+function setDocZoom(next) {
+  docZoom = Math.min(300, Math.max(50, Math.round(next)));
+  applyDocZoom();
+}
+
+function stepDocZoom(direction) {
+  const next = direction > 0 ? docZoomSteps.find((step) => step > docZoom) : [...docZoomSteps].reverse().find((step) => step < docZoom);
+  setDocZoom(next ?? docZoom);
+}
+
+const docZoomControls = () => `
+  <div class="doc-zoom" role="group" aria-label="Zoom document">
+    <button type="button" data-doc-zoom="out" aria-label="Zoom out">−</button>
+    <button type="button" class="doc-zoom-value" id="doc-zoom-value" data-doc-zoom="reset" aria-label="Reset zoom">100%</button>
+    <button type="button" data-doc-zoom="in" aria-label="Zoom in">+</button>
+  </div>`;
+
+docView.addEventListener("click", (e) => {
+  const button = e.target.closest("[data-doc-zoom]");
+  if (!button) return;
+  if (button.dataset.docZoom === "in") stepDocZoom(1);
+  else if (button.dataset.docZoom === "out") stepDocZoom(-1);
+  else setDocZoom(100);
+});
+
+// Ctrl/⌘ + wheel or + / − over a document zooms the document instead of the page
+docBody.addEventListener("wheel", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || !docZoomTarget()) return;
+  e.preventDefault();
+  setDocZoom(docZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+}, { passive: false });
+
+document.addEventListener("keydown", (e) => {
+  if (docView.hidden || !(e.ctrlKey || e.metaKey) || !docZoomTarget()) return;
+  if (e.key === "=" || e.key === "+") stepDocZoom(1);
+  else if (e.key === "-") stepDocZoom(-1);
+  else if (e.key === "0") setDocZoom(100);
+  else return;
+  e.preventDefault();
+});
+
 /* RIGHT RAIL DATE */
 function renderRailDate() {
-  const now = new Date();
+  const now = railSelectedDay;
   const weekday = now.toLocaleDateString("en-GB", { weekday: "long" });
   const month = now.toLocaleDateString("en-GB", { month: "long" });
   document.getElementById("rail-date").textContent = `${weekday}, ${now.getDate()} ${month}`;
@@ -6269,6 +6600,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 /* INITIAL RENDER */
+applyRolePermissions();
 enhanceSelects();
 new MutationObserver((mutations) => {
   mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
